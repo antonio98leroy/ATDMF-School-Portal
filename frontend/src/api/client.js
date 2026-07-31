@@ -1,0 +1,1 @@
+import axios from'axios';const api=axios.create({baseURL:'http://127.0.0.1:8000/api'});api.interceptors.request.use(c=>{const t=localStorage.getItem('access');if(t)c.headers.Authorization=`Bearer ${t}`;return c});api.interceptors.response.use(r=>r,async e=>{if(e.response?.status===401){localStorage.clear();location.href='/login'}return Promise.reject(e)});export default api;
