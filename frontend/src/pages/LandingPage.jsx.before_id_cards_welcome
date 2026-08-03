@@ -1,0 +1,332 @@
+import {
+  ArrowForward,
+  Login,
+} from "@mui/icons-material";
+
+import {
+  AppBar,
+  Box,
+  Button,
+  Card,
+  CardContent,
+  Container,
+  Grid,
+  Stack,
+  Toolbar,
+  Typography,
+} from "@mui/material";
+
+import { useNavigate } from "react-router-dom";
+
+
+const features = [
+  {
+    title: "Academic Management",
+    description:
+      "Enrollment, examinations, report cards, transcripts and promotions.",
+  },
+  {
+    title: "Student Sponsorship",
+    description:
+      "Track sponsored and unsponsored students and generate sponsor reports.",
+  },
+  {
+    title: "Finance and Banking",
+    description:
+      "Manage payments, receipts, bank statements, expenses and reconciliation.",
+  },
+  {
+    title: "Smart Attendance",
+    description:
+      "Teacher-friendly attendance management for computers, tablets and phones.",
+  },
+  {
+    title: "Parent and Student Portals",
+    description:
+      "Secure access to results, attendance, notices and student information.",
+  },
+  {
+    title: "Secure Administration",
+    description:
+      "Role-based access, audit logs, import history and system settings.",
+  },
+];
+
+
+export default function LandingPage() {
+  const navigate = useNavigate();
+
+  return (
+    <Box
+      sx={{
+        minHeight: "100vh",
+        bgcolor: "#F8FAFC",
+      }}
+    >
+      <AppBar
+        position="sticky"
+        elevation={0}
+        sx={{
+          bgcolor: "#071B54",
+        }}
+      >
+        <Toolbar>
+          <Stack
+            direction="row"
+            spacing={1.5}
+            sx={{
+              alignItems: "center",
+              flexGrow: 1,
+            }}
+          >
+            <Box
+              component="img"
+              src="/atdmf-seal.jpeg"
+              alt="ATDMF seal"
+              sx={{
+                width: 56,
+                height: 56,
+                objectFit: "contain",
+                borderRadius: "50%",
+                bgcolor: "white",
+              }}
+            />
+
+            <Box>
+              <Typography
+                fontWeight={900}
+              >
+                Annie T. Doe Memorial Academy
+              </Typography>
+
+              <Typography
+                variant="caption"
+                sx={{
+                  opacity: 0.85,
+                }}
+              >
+                Lower Buchanan, Grand Bassa County, Liberia
+              </Typography>
+            </Box>
+          </Stack>
+
+          <Button
+            color="inherit"
+            variant="outlined"
+            startIcon={<Login />}
+            onClick={() =>
+              navigate("/login")
+            }
+          >
+            Portal Login
+          </Button>
+        </Toolbar>
+      </AppBar>
+
+      <Box
+        sx={{
+          background:
+            "linear-gradient(135deg, #071B54 0%, #0B2A78 58%, #C8102E 100%)",
+          color: "white",
+          py: {
+            xs: 8,
+            md: 12,
+          },
+        }}
+      >
+        <Container maxWidth="lg">
+          <Grid
+            container
+            spacing={5}
+            sx={{
+              alignItems: "center",
+            }}
+          >
+            <Grid
+              size={{
+                xs: 12,
+                md: 7,
+              }}
+            >
+              <Typography
+                variant="overline"
+                sx={{
+                  fontWeight: 900,
+                  letterSpacing: 2,
+                }}
+              >
+                Welcome to ATDMA
+              </Typography>
+
+              <Typography
+                variant="h2"
+                sx={{
+                  fontWeight: 900,
+                  lineHeight: 1.05,
+                  mt: 1,
+                  fontSize: {
+                    xs: "2.5rem",
+                    md: "4rem",
+                  },
+                }}
+              >
+                Empowering Today’s Generation for a Better Tomorrow
+              </Typography>
+
+              <Typography
+                variant="h6"
+                sx={{
+                  mt: 3,
+                  maxWidth: 760,
+                  opacity: 0.92,
+                  fontWeight: 400,
+                }}
+              >
+                A tuition-free Christian institution providing quality education, student development and opportunities for children in Liberia.
+              </Typography>
+
+              <Button
+                size="large"
+                variant="contained"
+                endIcon={<ArrowForward />}
+                onClick={() =>
+                  navigate("/login")
+                }
+                sx={{
+                  mt: 4,
+                  bgcolor: "white",
+                  color: "#0B2A78",
+                  fontWeight: 900,
+                  px: 4,
+                  "&:hover": {
+                    bgcolor: "#E2E8F0",
+                  },
+                }}
+              >
+                Enter School Portal
+              </Button>
+            </Grid>
+
+            <Grid
+              size={{
+                xs: 12,
+                md: 5,
+              }}
+            >
+              <Box
+                component="img"
+                src="/atdmf-seal.jpeg"
+                alt="Annie T. Doe Memorial Academy seal"
+                sx={{
+                  width: "100%",
+                  maxWidth: 420,
+                  display: "block",
+                  mx: "auto",
+                  bgcolor: "white",
+                  borderRadius: "50%",
+                  boxShadow: 20,
+                }}
+              />
+            </Grid>
+          </Grid>
+        </Container>
+      </Box>
+
+      <Container
+        maxWidth="lg"
+        sx={{
+          py: 8,
+        }}
+      >
+        <Typography
+          variant="h3"
+          textAlign="center"
+          fontWeight={900}
+          color="#0B2A78"
+        >
+          One Connected School Platform
+        </Typography>
+
+        <Typography
+          textAlign="center"
+          color="text.secondary"
+          sx={{
+            mt: 1,
+            mb: 5,
+          }}
+        >
+          Supporting leadership, teachers, students, parents and sponsors.
+        </Typography>
+
+        <Grid container spacing={3}>
+          {features.map((feature) => (
+            <Grid
+              key={feature.title}
+              size={{
+                xs: 12,
+                sm: 6,
+                md: 4,
+              }}
+            >
+              <Card
+                variant="outlined"
+                sx={{
+                  height: "100%",
+                  borderRadius: 3,
+                }}
+              >
+                <CardContent sx={{ p: 3 }}>
+                  <Typography
+                    variant="h6"
+                    fontWeight={900}
+                    color="#0B2A78"
+                  >
+                    {feature.title}
+                  </Typography>
+
+                  <Typography
+                    color="text.secondary"
+                    sx={{ mt: 1 }}
+                  >
+                    {feature.description}
+                  </Typography>
+                </CardContent>
+              </Card>
+            </Grid>
+          ))}
+        </Grid>
+      </Container>
+
+      <Box
+        sx={{
+          bgcolor: "#071B54",
+          color: "white",
+          py: 5,
+        }}
+      >
+        <Container maxWidth="lg">
+          <Typography
+            variant="h5"
+            fontWeight={900}
+          >
+            Annie T. Doe Memorial Academy
+          </Typography>
+
+          <Typography sx={{ mt: 1 }}>
+            Lower Buchanan, Grand Bassa County, Liberia
+          </Typography>
+
+          <Typography
+            variant="body2"
+            sx={{
+              mt: 2,
+              opacity: 0.8,
+            }}
+          >
+            Official telephone numbers, email and website are maintained through the portal System Settings page.
+          </Typography>
+        </Container>
+      </Box>
+    </Box>
+  );
+}

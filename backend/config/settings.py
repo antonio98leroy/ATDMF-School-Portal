@@ -12,9 +12,15 @@ ALLOWED_HOSTS=['127.0.0.1','localhost']
 INSTALLED_APPS=[
 'django.contrib.admin','django.contrib.auth','django.contrib.contenttypes','django.contrib.sessions','django.contrib.messages','django.contrib.staticfiles',
 'rest_framework','rest_framework_simplejwt','corsheaders',
-'accounts','students','staff','academics','attendance','examinations','finance','communications','audit']
+'accounts','students','staff', "employees","teacher_assignments",'academics','attendance','examinations','finance','communications','audit.apps.AuditConfig',
+'school_settings',
+'import_center',
+    'academic_import.apps.AcademicImportConfig',
+    'system_tools.apps.SystemToolsConfig',
+]
 
-MIDDLEWARE=['django.middleware.security.SecurityMiddleware','corsheaders.middleware.CorsMiddleware','django.contrib.sessions.middleware.SessionMiddleware','django.middleware.common.CommonMiddleware','django.middleware.csrf.CsrfViewMiddleware','django.contrib.auth.middleware.AuthenticationMiddleware','django.contrib.messages.middleware.MessageMiddleware','django.middleware.clickjacking.XFrameOptionsMiddleware']
+MIDDLEWARE=['django.middleware.security.SecurityMiddleware','corsheaders.middleware.CorsMiddleware','django.contrib.sessions.middleware.SessionMiddleware','django.middleware.common.CommonMiddleware','django.middleware.csrf.CsrfViewMiddleware','django.contrib.auth.middleware.AuthenticationMiddleware',
+    'audit.middleware.AuditRequestMiddleware','django.contrib.messages.middleware.MessageMiddleware','django.middleware.clickjacking.XFrameOptionsMiddleware']
 
 ROOT_URLCONF='config.urls'
 

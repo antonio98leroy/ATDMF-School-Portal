@@ -9,6 +9,7 @@ from .models import (
     SubjectAssignment,
     Term,
     TimetableEntry,
+    StudentPromotion,
 )
 
 
@@ -138,8 +139,9 @@ class EnrollmentSerializer(serializers.ModelSerializer):
         source="student.admission_number",
         read_only=True,
     )
-    class_name = serializers.CharField(
-        source="class_section.__str__",
+    class_name = serializers.SerializerMethodField()
+    grade_name = serializers.CharField(
+        source="class_section.grade.name",
         read_only=True,
     )
     academic_year_name = serializers.CharField(
@@ -149,8 +151,106 @@ class EnrollmentSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = Enrollment
-        fields = "__all__"
+        fields = [
+            "id",
+            "student",
+            "student_name",
+            "admission_number",
+            "class_section",
+            "class_name",
+            "grade_name",
+            "academic_year",
+            "academic_year_name",
+            "roll_number",
+            "active",
+            "created_at",
+            "updated_at",
+        ]
+        read_only_fields = [
+            "created_at",
+            "updated_at",
+        ]
 
+    def get_class_name(self, obj):
+        return str(obj.class_section)
+
+    def validate(self, attrs):
+        student = attrs.get(
+            "student",
+            getattr(self.instance, "student", None),
+        )
+        academic_year = attrs.get(
+            "academic_year",
+            getattr(self.instance, "academic_year", None),
+        )
+        class_section = attrs.get(
+            "class_section",
+            getattr(self.instance, "class_section", None),
+        )
+        roll_number = attrs.get(
+            "roll_number",
+            getattr(self.instance, "roll_number", None),
+        )
+
+        existing = Enrollment.objects.filter(
+            student=student,
+            academic_year=academic_year,
+        )
+
+        if self.instance:
+            existing = existing.exclude(pk=self.instance.pk)
+
+        if existing.exists():
+            raise serializers.ValidationError(
+                {
+                    "student": (
+                        "This student is already enrolled "
+                        "for the selected academic year."
+                    )
+                }
+            )
+
+        if roll_number:
+            roll_exists = Enrollment.objects.filter(
+                class_section=class_section,
+                academic_year=academic_year,
+                roll_number=roll_number,
+            )
+
+            if self.instance:
+                roll_exists = roll_exists.exclude(
+                    pk=self.instance.pk
+                )
+
+            if roll_exists.exists():
+                raise serializers.ValidationError(
+                    {
+                        "roll_number": (
+                            "This roll number is already assigned "
+                            "in the selected class."
+                        )
+                    }
+                )
+
+        if (
+            class_section
+            and class_section.enrollments.filter(
+                academic_year=academic_year,
+                active=True,
+            ).exclude(
+                pk=self.instance.pk if self.instance else None
+            ).count()
+            >= class_section.capacity
+        ):
+            raise serializers.ValidationError(
+                {
+                    "class_section": (
+                        "This class has reached its maximum capacity."
+                    )
+                }
+            )
+
+        return attrs
 
 class SubjectAssignmentSerializer(serializers.ModelSerializer):
     subject_name = serializers.CharField(
@@ -210,3 +310,93 @@ class TimetableEntrySerializer(serializers.ModelSerializer):
             )
 
         return attrs
+class StudentPromotionSerializer(
+    serializers.ModelSerializer
+):
+    student_name = serializers.CharField(
+        source="student.full_name",
+        read_only=True,
+    )
+
+    admission_number = serializers.CharField(
+        source="student.admission_number",
+        read_only=True,
+    )
+
+    source_year_name = serializers.CharField(
+        source="source_academic_year.name",
+        read_only=True,
+    )
+
+    target_year_name = serializers.CharField(
+        source="target_academic_year.name",
+        read_only=True,
+    )
+
+    source_class_name = serializers.CharField(
+        source="source_class.__str__",
+        read_only=True,
+    )
+
+    target_class_name = serializers.SerializerMethodField()
+
+    decision_display = serializers.CharField(
+        source="get_decision_display",
+        read_only=True,
+    )
+
+    promoted_by_name = serializers.CharField(
+        source="promoted_by.get_full_name",
+        read_only=True,
+    )
+
+    class Meta:
+        model = StudentPromotion
+
+        fields = [
+            "id",
+            "student",
+            "student_name",
+            "admission_number",
+            "source_enrollment",
+            "source_academic_year",
+            "source_year_name",
+            "source_class",
+            "source_class_name",
+            "target_academic_year",
+            "target_year_name",
+            "target_class",
+            "target_class_name",
+            "target_enrollment",
+            "decision",
+            "decision_display",
+            "yearly_average",
+            "remarks",
+            "promoted_by",
+            "promoted_by_name",
+            "processed_at",
+        ]
+
+        read_only_fields = [
+            "id",
+            "student",
+            "student_name",
+            "admission_number",
+            "source_enrollment",
+            "source_academic_year",
+            "source_year_name",
+            "source_class",
+            "source_class_name",
+            "target_enrollment",
+            "target_class_name",
+            "decision_display",
+            "promoted_by",
+            "promoted_by_name",
+            "processed_at",
+        ]
+
+    def get_target_class_name(self, obj):
+        if not obj.target_class:
+            return ""
+
+        return str(obj.target_class)

@@ -1,0 +1,302 @@
+import { useState } from "react";
+
+import {
+  Alert,
+  Box,
+  Button,
+  Card,
+  CardContent,
+  CircularProgress,
+  Divider,
+  TextField,
+  Typography,
+} from "@mui/material";
+
+import {
+  LockOutlined,
+} from "@mui/icons-material";
+
+import { useAuth } from "../context/AuthContext";
+
+
+export default function Login() {
+  const { login } = useAuth();
+
+  const [username, setUsername] =
+    useState("");
+
+  const [password, setPassword] =
+    useState("");
+
+  const [error, setError] =
+    useState("");
+
+  const [submitting, setSubmitting] =
+    useState(false);
+
+  const handleSubmit = async (event) => {
+    event.preventDefault();
+    setError("");
+
+    if (!username.trim() || !password) {
+      setError(
+        "Please enter your username and password."
+      );
+      return;
+    }
+
+    setSubmitting(true);
+
+    try {
+      await login(
+        username.trim(),
+        password
+      );
+    } catch (err) {
+      setError(
+        err.response?.data?.detail ||
+          "Invalid username or password. Please try again."
+      );
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
+  return (
+    <Box
+      sx={{
+        minHeight: "100vh",
+        display: "grid",
+        placeItems: "center",
+        px: 2,
+        py: 4,
+        position: "relative",
+        isolation: "isolate",
+        backgroundImage:
+          "linear-gradient(110deg, rgba(7,27,84,0.94) 0%, rgba(7,27,84,0.82) 42%, rgba(11,42,120,0.55) 70%, rgba(200,16,46,0.38) 100%), url('/login-school-background.jpeg')",
+        backgroundSize: "cover",
+        backgroundPosition: "center",
+        backgroundAttachment: {
+          xs: "scroll",
+          md: "fixed",
+        },
+        "&::after": {
+          content: '""',
+          position: "absolute",
+          inset: 0,
+          zIndex: -1,
+          background:
+            "linear-gradient(180deg, rgba(0,0,0,0.08), rgba(0,0,0,0.24))",
+        },
+      }}
+    >
+      <Card
+        elevation={22}
+        sx={{
+          width: "100%",
+          maxWidth: 470,
+          borderRadius: 4,
+          overflow: "hidden",
+          bgcolor:
+            "rgba(255,255,255,0.96)",
+          backdropFilter: "blur(12px)",
+          border:
+            "1px solid rgba(255,255,255,0.55)",
+        }}
+      >
+        <Box
+          sx={{
+            height: 8,
+            background:
+              "linear-gradient(90deg, #0B2A78 0%, #0B2A78 58%, #C8102E 58%, #C8102E 100%)",
+          }}
+        />
+
+        <CardContent
+          sx={{
+            p: {
+              xs: 3,
+              sm: 5,
+            },
+          }}
+        >
+          <Box
+            sx={{
+              textAlign: "center",
+              mb: 3,
+            }}
+          >
+            <Box
+              component="img"
+              src="/atdmf-seal.jpeg"
+              alt="Annie T. Doe Memorial Academy seal"
+              sx={{
+                width: 125,
+                height: 125,
+                objectFit: "contain",
+                mb: 1.5,
+                borderRadius: "50%",
+                bgcolor: "white",
+                boxShadow:
+                  "0 8px 28px rgba(15,23,42,0.16)",
+              }}
+            />
+
+            <Typography
+              variant="h5"
+              sx={{
+                fontWeight: 900,
+                color: "#0B2A78",
+                lineHeight: 1.2,
+              }}
+            >
+              Annie T. Doe Memorial Academy
+            </Typography>
+
+            <Typography
+              variant="body2"
+              sx={{
+                mt: 1,
+                color: "text.secondary",
+                fontWeight: 700,
+              }}
+            >
+              Lower Buchanan, Grand Bassa County, Liberia
+            </Typography>
+
+            <Typography
+              variant="body1"
+              sx={{
+                mt: 1,
+                color: "#C8102E",
+                fontWeight: 800,
+              }}
+            >
+              School Management Information System
+            </Typography>
+          </Box>
+
+          <Divider sx={{ mb: 3 }} />
+
+          <Box
+            sx={{
+              textAlign: "center",
+              mb: 2,
+            }}
+          >
+            <LockOutlined
+              sx={{
+                color: "#0B2A78",
+                fontSize: 34,
+              }}
+            />
+
+            <Typography
+              variant="h6"
+              fontWeight={800}
+            >
+              Sign in to your account
+            </Typography>
+          </Box>
+
+          {error && (
+            <Alert
+              severity="error"
+              sx={{ mb: 2 }}
+            >
+              {error}
+            </Alert>
+          )}
+
+          <Box
+            component="form"
+            onSubmit={handleSubmit}
+            noValidate
+          >
+            <TextField
+              fullWidth
+              required
+              autoFocus
+              label="Username"
+              autoComplete="username"
+              margin="normal"
+              value={username}
+              disabled={submitting}
+              onChange={(event) =>
+                setUsername(
+                  event.target.value
+                )
+              }
+            />
+
+            <TextField
+              fullWidth
+              required
+              type="password"
+              label="Password"
+              autoComplete="current-password"
+              margin="normal"
+              value={password}
+              disabled={submitting}
+              onChange={(event) =>
+                setPassword(
+                  event.target.value
+                )
+              }
+            />
+
+            <Button
+              fullWidth
+              type="submit"
+              variant="contained"
+              size="large"
+              disabled={submitting}
+              sx={{
+                mt: 3,
+                py: 1.4,
+                bgcolor: "#0B2A78",
+                fontWeight: 800,
+                "&:hover": {
+                  bgcolor: "#071B54",
+                },
+              }}
+            >
+              {submitting ? (
+                <CircularProgress
+                  size={24}
+                  color="inherit"
+                />
+              ) : (
+                "Sign In"
+              )}
+            </Button>
+          </Box>
+
+          <Typography
+            variant="caption"
+            color="text.secondary"
+            sx={{
+              display: "block",
+              textAlign: "center",
+              mt: 4,
+            }}
+          >
+            © {new Date().getFullYear()} Annie T. Doe Memorial Academy
+          </Typography>
+
+          <Typography
+            variant="caption"
+            sx={{
+              display: "block",
+              textAlign: "center",
+              color: "#0B2A78",
+              mt: 0.5,
+            }}
+          >
+            Powered by Prime Tech Enterprise LLC
+          </Typography>
+        </CardContent>
+      </Card>
+    </Box>
+  );
+}

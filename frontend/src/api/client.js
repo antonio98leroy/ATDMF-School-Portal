@@ -1,7 +1,8 @@
 import axios from "axios";
 
 const API_URL =
-  import.meta.env.VITE_API_URL || "http://127.0.0.1:8000/api";
+  import.meta.env.VITE_API_URL ||
+  "http://127.0.0.1:8000/api";
 
 const api = axios.create({
   baseURL: API_URL,
@@ -12,10 +13,15 @@ const api = axios.create({
 
 api.interceptors.request.use(
   (config) => {
-    const accessToken = localStorage.getItem("access");
+    const accessToken =
+      localStorage.getItem("access");
 
     if (accessToken) {
-      config.headers.Authorization = `Bearer ${accessToken}`;
+      config.headers =
+        config.headers || {};
+
+      config.headers.Authorization =
+        `Bearer ${accessToken}`;
     }
 
     return config;
@@ -28,16 +34,18 @@ api.interceptors.response.use(
   async (error) => {
     const originalRequest = error.config;
 
+    const refreshToken =
+      localStorage.getItem("refresh");
+
     if (
       error.response?.status === 401 &&
-      !originalRequest?._retry &&
-      localStorage.getItem("refresh")
+      originalRequest &&
+      !originalRequest._retry &&
+      refreshToken
     ) {
       originalRequest._retry = true;
 
       try {
-        const refreshToken = localStorage.getItem("refresh");
-
         const response = await axios.post(
           `${API_URL}/auth/token/refresh/`,
           {
@@ -45,9 +53,16 @@ api.interceptors.response.use(
           }
         );
 
-        const newAccessToken = response.data.access;
+        const newAccessToken =
+          response.data.access;
 
-        localStorage.setItem("access", newAccessToken);
+        localStorage.setItem(
+          "access",
+          newAccessToken
+        );
+
+        originalRequest.headers =
+          originalRequest.headers || {};
 
         originalRequest.headers.Authorization =
           `Bearer ${newAccessToken}`;
@@ -56,6 +71,7 @@ api.interceptors.response.use(
       } catch (refreshError) {
         localStorage.removeItem("access");
         localStorage.removeItem("refresh");
+        localStorage.removeItem("user");
 
         window.location.href = "/login";
 

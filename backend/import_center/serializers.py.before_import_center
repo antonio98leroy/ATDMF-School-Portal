@@ -1,0 +1,23 @@
+from rest_framework import serializers
+from .models import ImportBatch
+
+
+class ImportBatchSerializer(serializers.ModelSerializer):
+    uploaded_by_name = serializers.SerializerMethodField()
+    confirmed_by_name = serializers.SerializerMethodField()
+    academic_year_name = serializers.CharField(source="academic_year.name", read_only=True)
+
+    class Meta:
+        model = ImportBatch
+        fields = "__all__"
+        read_only_fields = [
+            "batch_number", "status", "preview_data", "summary", "total_rows",
+            "successful_rows", "failed_rows", "uploaded_by", "confirmed_by",
+            "uploaded_at", "confirmed_at", "rolled_back_at"
+        ]
+
+    def get_uploaded_by_name(self, obj):
+        return obj.uploaded_by.get_full_name() or obj.uploaded_by.username if obj.uploaded_by else ""
+
+    def get_confirmed_by_name(self, obj):
+        return obj.confirmed_by.get_full_name() or obj.confirmed_by.username if obj.confirmed_by else ""

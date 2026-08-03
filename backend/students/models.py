@@ -1,8 +1,40 @@
 from django.db import models
 from accounts.models import User
+from django.conf import settings
+
 class Guardian(models.Model):
-    name=models.CharField(max_length=150); relationship=models.CharField(max_length=50); phone=models.CharField(max_length=20); email=models.EmailField(blank=True); address=models.TextField(blank=True)
-    def __str__(self): return self.name
+    user = models.OneToOneField(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name="guardian_profile",
+    )
+
+    name = models.CharField(max_length=150)
+
+    relationship = models.CharField(
+        max_length=50,
+    )
+
+    phone = models.CharField(max_length=20)
+
+    email = models.EmailField(blank=True)
+
+    address = models.TextField(blank=True)
+
+    active = models.BooleanField(default=True)
+
+    created_at = models.DateTimeField(
+        auto_now_add=True,
+    )
+
+    updated_at = models.DateTimeField(
+        auto_now=True,
+    )
+
+    def __str__(self):
+        return self.name
 class Student(models.Model):
     class Gender(models.TextChoices): MALE='M','Male'; FEMALE='F','Female'
     admission_number=models.CharField(max_length=30,unique=True,blank=True)

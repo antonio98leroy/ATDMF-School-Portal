@@ -1,0 +1,3 @@
+import { Box, Typography } from "@mui/material";
+import Attendance from "./Attendance";
+export default function ClassroomAttendance(){return <Box className="classroom-mode"><style>{`.classroom-mode .MuiButton-root{min-height:52px;font-size:1rem}.classroom-mode .MuiTableCell-root{font-size:1rem;padding:14px 10px}.classroom-mode .MuiSelect-select{min-height:28px!important}.classroom-mode{max-width:1500px;margin:auto}@media(max-width:700px){.classroom-mode .MuiTableCell-root{padding:10px 6px;font-size:.9rem}}`}</style><Typography variant="h4" fontWeight={900} color="#0B2A78" mb={1}>Tablet Classroom Attendance</Typography><Typography color="text.secondary" mb={2}>Large touch controls for teachers using phones and tablets in class.</Typography><Attendance/></Box>}

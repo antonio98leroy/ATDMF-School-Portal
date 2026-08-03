@@ -1,0 +1,501 @@
+import {
+  Navigate,
+  Route,
+  Routes,
+} from "react-router-dom";
+
+import { useAuth } from "./context/AuthContext";
+
+import Layout from "./layouts/Layout";
+import RoleRoute from "./components/RoleRoute";
+
+import Academics from "./pages/Academics";
+import Attendance from "./pages/Attendance";
+import Dashboard from "./pages/Dashboard";
+import Enrollments from "./pages/Enrollments";
+import Examinations from "./pages/Examinations";
+import Finance from "./pages/Finance";
+import Login from "./pages/Login";
+import Notices from "./pages/Notices";
+import OwnerDashboard from "./pages/OwnerDashboard";
+import ParentPortal from "./pages/ParentPortal";
+import PrincipalDashboard from "./pages/PrincipalDashboard";
+import Promotions from "./pages/Promotions";
+import ReportCards from "./pages/ReportCards";
+import ReportsCenter from "./pages/ReportsCenter";
+import Staff from "./pages/Staff";
+import StudentPortal from "./pages/StudentPortal";
+import Students from "./pages/Students";
+import TeacherAssignments from "./pages/TeacherAssignments";
+import TeacherPortal from "./pages/TeacherPortal";
+import Employees from "./pages/employees/Employees";
+
+
+import AuditLogs from "./pages/AuditLogs";
+import SystemSettings from "./pages/SystemSettings";
+import ImportCenter from "./pages/ImportCenter";
+import AcademicImport from "./pages/AcademicImport";
+const EXECUTIVE_ROLES = [
+  "OWNER",
+  "SUPER_ADMIN",
+  "PRINCIPAL",
+];
+
+const ACADEMIC_MANAGEMENT_ROLES = [
+  "SUPER_ADMIN",
+  "PRINCIPAL",
+  "VICE_PRINCIPAL",
+  "REGISTRAR",
+];
+
+const STUDENT_MANAGEMENT_ROLES = [
+  "SUPER_ADMIN",
+  "PRINCIPAL",
+  "VICE_PRINCIPAL",
+  "REGISTRAR",
+];
+
+const EMPLOYEE_MANAGEMENT_ROLES = [
+  "SUPER_ADMIN",
+  "PRINCIPAL",
+  "VICE_PRINCIPAL",
+  "IT_ADMIN",
+];
+
+const EXAMINATION_ROLES = [
+  "SUPER_ADMIN",
+  "PRINCIPAL",
+  "VICE_PRINCIPAL",
+  "REGISTRAR",
+  "TEACHER",
+];
+
+const FINANCE_ROLES = [
+  "SUPER_ADMIN",
+  "PRINCIPAL",
+  "ACCOUNTANT",
+  "REGISTRAR",
+];
+
+const ATTENDANCE_ROLES = [
+  "SUPER_ADMIN",
+  "PRINCIPAL",
+  "VICE_PRINCIPAL",
+  "REGISTRAR",
+  "TEACHER",
+];
+
+const COMMUNICATION_ROLES = [
+  "SUPER_ADMIN",
+  "PRINCIPAL",
+  "VICE_PRINCIPAL",
+  "REGISTRAR",
+  "ACCOUNTANT",
+  "TEACHER",
+  "IT_ADMIN",
+];
+
+const REPORT_ROLES = [
+  "SUPER_ADMIN",
+  "PRINCIPAL",
+  "VICE_PRINCIPAL",
+  "REGISTRAR",
+  "ACCOUNTANT",
+];
+
+const SETTINGS_ROLES = [
+  "SUPER_ADMIN",
+  "IT_ADMIN",
+  "DEVELOPER",
+];
+
+
+
+const AUDIT_ROLES = [
+  "OWNER",
+  "SUPER_ADMIN",
+  "IT_ADMIN",
+  "DEVELOPER",
+  "PRINCIPAL",
+];
+
+const IMPORT_ROLES = ["OWNER", "SUPER_ADMIN", "DEVELOPER", "IT_ADMIN", "REGISTRAR"];
+
+
+const ACADEMIC_IMPORT_ROLES = [
+  "OWNER",
+  "SUPER_ADMIN",
+  "DEVELOPER",
+  "IT_ADMIN",
+  "REGISTRAR",
+  "PRINCIPAL",
+];
+
+function Placeholder({ title }) {
+  return (
+    <div>
+      <h1>{title}</h1>
+
+      <p>
+        This module will be completed in the next
+        development stage.
+      </p>
+    </div>
+  );
+}
+
+
+function HomeRedirect() {
+  const { user } = useAuth();
+
+  switch (user?.role) {
+    case "TEACHER":
+      return (
+        <Navigate
+          to="/teacher-portal"
+          replace
+        />
+      );
+
+    case "STUDENT":
+      return (
+        <Navigate
+          to="/student-portal"
+          replace
+        />
+      );
+
+    case "PARENT":
+      return (
+        <Navigate
+          to="/parent-portal"
+          replace
+        />
+      );
+
+    case "PRINCIPAL":
+      return (
+        <Navigate
+          to="/principal-dashboard"
+          replace
+        />
+      );
+
+    default:
+      return <Dashboard />;
+  }
+}
+
+
+export default function App() {
+  const { user, loading } = useAuth();
+
+  if (loading) {
+    return null;
+  }
+
+  return (
+    <Routes>
+      <Route
+        path="/login"
+        element={
+          user ? (
+            <Navigate
+              to="/"
+              replace
+            />
+          ) : (
+            <Login />
+          )
+        }
+      />
+
+      <Route
+        element={
+          user ? (
+            <Layout />
+          ) : (
+            <Navigate
+              to="/login"
+              replace
+            />
+          )
+        }
+      >
+        <Route
+          path="/"
+          element={<HomeRedirect />}
+        />
+
+        <Route
+          path="/students"
+          element={
+            <RoleRoute
+              roles={
+                STUDENT_MANAGEMENT_ROLES
+              }
+            >
+              <Students />
+            </RoleRoute>
+          }
+        />
+
+        <Route
+          path="/enrollments"
+          element={
+            <RoleRoute
+              roles={
+                STUDENT_MANAGEMENT_ROLES
+              }
+            >
+              <Enrollments />
+            </RoleRoute>
+          }
+        />
+
+        <Route
+          path="/staff"
+          element={
+            <RoleRoute
+              roles={
+                EMPLOYEE_MANAGEMENT_ROLES
+              }
+            >
+              <Staff />
+            </RoleRoute>
+          }
+        />
+
+        <Route
+          path="/employees"
+          element={
+            <RoleRoute
+              roles={
+                EMPLOYEE_MANAGEMENT_ROLES
+              }
+            >
+              <Employees />
+            </RoleRoute>
+          }
+        />
+
+        <Route
+          path="/academics"
+          element={
+            <RoleRoute
+              roles={
+                ACADEMIC_MANAGEMENT_ROLES
+              }
+            >
+              <Academics />
+            </RoleRoute>
+          }
+        />
+
+        <Route
+          path="/teacher-assignments"
+          element={
+            <RoleRoute
+              roles={
+                ACADEMIC_MANAGEMENT_ROLES
+              }
+            >
+              <TeacherAssignments />
+            </RoleRoute>
+          }
+        />
+
+        <Route
+          path="/examinations"
+          element={
+            <RoleRoute
+              roles={EXAMINATION_ROLES}
+            >
+              <Examinations />
+            </RoleRoute>
+          }
+        />
+
+        <Route
+          path="/report-cards"
+          element={
+            <RoleRoute
+              roles={EXAMINATION_ROLES}
+            >
+              <ReportCards />
+            </RoleRoute>
+          }
+        />
+
+        <Route
+          path="/promotions"
+          element={
+            <RoleRoute
+              roles={
+                ACADEMIC_MANAGEMENT_ROLES
+              }
+            >
+              <Promotions />
+            </RoleRoute>
+          }
+        />
+
+        <Route
+          path="/finance"
+          element={
+            <RoleRoute
+              roles={FINANCE_ROLES}
+            >
+              <Finance />
+            </RoleRoute>
+          }
+        />
+
+        <Route
+          path="/attendance"
+          element={
+            <RoleRoute
+              roles={ATTENDANCE_ROLES}
+            >
+              <Attendance />
+            </RoleRoute>
+          }
+        />
+
+        <Route
+          path="/communications"
+          element={
+            <RoleRoute
+              roles={COMMUNICATION_ROLES}
+            >
+              <Notices />
+            </RoleRoute>
+          }
+        />
+
+        <Route
+          path="/teacher-portal"
+          element={
+            <RoleRoute
+              roles={["TEACHER"]}
+            >
+              <TeacherPortal />
+            </RoleRoute>
+          }
+        />
+
+        <Route
+          path="/student-portal"
+          element={
+            <RoleRoute
+              roles={["STUDENT"]}
+            >
+              <StudentPortal />
+            </RoleRoute>
+          }
+        />
+
+        <Route
+          path="/parent-portal"
+          element={
+            <RoleRoute
+              roles={["PARENT"]}
+            >
+              <ParentPortal />
+            </RoleRoute>
+          }
+        />
+
+        <Route
+          path="/principal-dashboard"
+          element={
+            <RoleRoute
+              roles={EXECUTIVE_ROLES}
+            >
+              <PrincipalDashboard />
+            </RoleRoute>
+          }
+        />
+
+        <Route
+          path="/owner-dashboard"
+          element={
+            <RoleRoute
+              roles={["OWNER", "SUPER_ADMIN"]}
+            >
+              <OwnerDashboard />
+            </RoleRoute>
+          }
+        />
+
+        <Route
+          path="/reports"
+          element={
+            <RoleRoute
+              roles={REPORT_ROLES}
+            >
+              <ReportsCenter />
+            </RoleRoute>
+          }
+        />
+
+
+        <Route
+          path="/audit-logs"
+          element={
+            <RoleRoute roles={AUDIT_ROLES}>
+              <AuditLogs />
+            </RoleRoute>
+          }
+        />
+
+        <Route
+          path="/import-center"
+          element={
+            <RoleRoute roles={IMPORT_ROLES}>
+              <ImportCenter />
+            </RoleRoute>
+          }
+        />
+
+
+        <Route
+          path="/academic-import"
+          element={
+            <RoleRoute roles={ACADEMIC_IMPORT_ROLES}>
+              <AcademicImport />
+            </RoleRoute>
+          }
+        />
+
+        <Route
+          path="/profile"
+          element={
+            <Placeholder title="My Profile" />
+          }
+        />
+
+        <Route
+          path="/settings"
+          element={
+            <RoleRoute
+              roles={SETTINGS_ROLES}
+            >
+              <SystemSettings />
+            </RoleRoute>
+          }
+        />
+      </Route>
+
+      <Route
+        path="*"
+        element={
+          <Navigate
+            to="/"
+            replace
+          />
+        }
+      />
+    </Routes>
+  );
+}

@@ -1,0 +1,790 @@
+import { useState } from "react";
+
+import {
+  AccountBox,
+  AccountCircle,
+  AdminPanelSettings,
+  Assessment,
+  AssignmentInd,
+  CalendarMonth,
+  Campaign,
+  CoPresent,
+  Dashboard,
+  DashboardCustomize,
+  FactCheck,
+  FamilyRestroom,
+  Groups,
+  Logout,
+  Menu as MenuIcon,
+  MenuBook,
+  Payments,
+  PersonAddAlt1,
+  School,
+  Settings,
+  Summarize,
+  Upgrade,
+  UploadFile,
+  Security,
+} from "@mui/icons-material";
+
+import {
+  AppBar,
+  Avatar,
+  Box,
+  Divider,
+  Drawer,
+  IconButton,
+  List,
+  ListItemButton,
+  ListItemIcon,
+  ListItemText,
+  Menu,
+  MenuItem,
+  Stack,
+  Toolbar,
+  Tooltip,
+  Typography,
+  useMediaQuery,
+  useTheme,
+} from "@mui/material";
+
+import {
+  Outlet,
+  useLocation,
+  useNavigate,
+} from "react-router-dom";
+
+import { useAuth } from "../context/AuthContext";
+
+
+const drawerWidth = 260;
+
+const navigationItems = [
+  {
+    label: "Dashboard",
+    path: "/",
+    icon: <Dashboard />,
+    roles: [
+      "SUPER_ADMIN",
+      "PRINCIPAL",
+      "VICE_PRINCIPAL",
+      "REGISTRAR",
+      "ACCOUNTANT",
+      "TEACHER",
+      "STUDENT",
+      "PARENT",
+      "IT_ADMIN",
+    ],
+  },
+  {
+    label: "Owner Dashboard",
+    path: "/owner-dashboard",
+    icon: <DashboardCustomize />,
+    roles: ["OWNER", "SUPER_ADMIN"],
+  },
+  {
+    label: "Principal Dashboard",
+    path: "/principal-dashboard",
+    icon: <AdminPanelSettings />,
+    roles: ["OWNER", "SUPER_ADMIN", "PRINCIPAL"],
+  },
+  {
+    label: "Students",
+    path: "/students",
+    icon: <School />,
+    roles: ["SUPER_ADMIN", "PRINCIPAL", "VICE_PRINCIPAL", "REGISTRAR"],
+  },
+  {
+    label: "Enrollment",
+    path: "/enrollments",
+    icon: <PersonAddAlt1 />,
+    roles: ["SUPER_ADMIN", "PRINCIPAL", "VICE_PRINCIPAL", "REGISTRAR"],
+  },
+  {
+    label: "Employees",
+    path: "/employees",
+    icon: <Groups />,
+    roles: ["SUPER_ADMIN", "PRINCIPAL", "VICE_PRINCIPAL", "IT_ADMIN"],
+  },
+  {
+    label: "Academics",
+    path: "/academics",
+    icon: <MenuBook />,
+    roles: ["SUPER_ADMIN", "PRINCIPAL", "VICE_PRINCIPAL", "REGISTRAR"],
+  },
+  {
+    label: "Teacher Assignments",
+    path: "/teacher-assignments",
+    icon: <AssignmentInd />,
+    roles: ["SUPER_ADMIN", "PRINCIPAL", "VICE_PRINCIPAL", "REGISTRAR"],
+  },
+  {
+    label: "Examinations",
+    path: "/examinations",
+    icon: <FactCheck />,
+    roles: ["SUPER_ADMIN", "PRINCIPAL", "VICE_PRINCIPAL", "REGISTRAR", "TEACHER"],
+  },
+  {
+    label: "Report Cards",
+    path: "/report-cards",
+    icon: <Assessment />,
+    roles: ["SUPER_ADMIN", "PRINCIPAL", "VICE_PRINCIPAL", "REGISTRAR", "TEACHER"],
+  },
+  {
+    label: "Student Promotion",
+    path: "/promotions",
+    icon: <Upgrade />,
+    roles: ["SUPER_ADMIN", "PRINCIPAL", "VICE_PRINCIPAL", "REGISTRAR"],
+  },
+  {
+    label: "Finance",
+    path: "/finance",
+    icon: <Payments />,
+    roles: ["SUPER_ADMIN", "PRINCIPAL", "ACCOUNTANT", "REGISTRAR"],
+  },
+  {
+    label: "Attendance",
+    path: "/attendance",
+    icon: <CalendarMonth />,
+    roles: ["SUPER_ADMIN", "PRINCIPAL", "VICE_PRINCIPAL", "REGISTRAR", "TEACHER"],
+  },
+  {
+    label: "Communications",
+    path: "/communications",
+    icon: <Campaign />,
+    roles: ["SUPER_ADMIN", "PRINCIPAL", "VICE_PRINCIPAL", "REGISTRAR", "ACCOUNTANT", "TEACHER", "IT_ADMIN"],
+  },
+  {
+    label: "Reports Center",
+    path: "/reports",
+    icon: <Summarize />,
+    roles: ["SUPER_ADMIN", "PRINCIPAL", "VICE_PRINCIPAL", "REGISTRAR", "ACCOUNTANT"],
+  },
+  {
+    label: "Teacher Portal",
+    path: "/teacher-portal",
+    icon: <CoPresent />,
+    roles: ["TEACHER"],
+  },
+  {
+    label: "Student Portal",
+    path: "/student-portal",
+    icon: <AccountBox />,
+    roles: ["STUDENT"],
+  },
+  {
+    label: "Parent Portal",
+    path: "/parent-portal",
+    icon: <FamilyRestroom />,
+    roles: ["PARENT"],
+  },
+  {
+    label: "Audit Logs",
+    path: "/audit-logs",
+    icon: <Security />,
+    roles: [
+      "SUPER_ADMIN",
+      "IT_ADMIN",
+      "PRINCIPAL",
+    ],
+  },
+
+  {
+    label: "Import Center",
+    path: "/import-center",
+    icon: <UploadFile />,
+    roles: ["OWNER", "SUPER_ADMIN", "DEVELOPER", "IT_ADMIN", "REGISTRAR"],
+  },
+];
+
+function getInitial(user) {
+  const value =
+    user?.first_name ||
+    user?.full_name ||
+    user?.username ||
+    "U";
+
+  return value.charAt(0).toUpperCase();
+}
+
+export default function Layout() {
+  const navigate = useNavigate();
+  const location = useLocation();
+
+  const theme = useTheme();
+  const isDesktop = useMediaQuery(
+    theme.breakpoints.up("md")
+  );
+
+  const { user, logout } = useAuth();
+
+  const userRole = String(
+    user?.role || ""
+  ).toUpperCase();
+
+  const canAccessSettings = [
+    "SUPER_ADMIN",
+    "IT_ADMIN",
+    "DEVELOPER",
+  ].includes(userRole);
+
+  const visibleNavigationItems =
+    navigationItems.filter((item) =>
+      item.roles.includes(userRole)
+    );
+
+  const [mobileOpen, setMobileOpen] = useState(false);
+  const [profileMenuAnchor, setProfileMenuAnchor] =
+    useState(null);
+
+  const isPathSelected = (path) => {
+    if (path === "/") {
+      return location.pathname === "/";
+    }
+
+    return location.pathname.startsWith(path);
+  };
+
+  const handleNavigate = (path) => {
+    navigate(path);
+    setMobileOpen(false);
+  };
+
+  const handleProfileMenuOpen = (event) => {
+    setProfileMenuAnchor(event.currentTarget);
+  };
+
+  const handleProfileMenuClose = () => {
+    setProfileMenuAnchor(null);
+  };
+
+  const handleLogout = () => {
+    handleProfileMenuClose();
+    logout();
+    navigate("/login");
+  };
+
+  const drawerContent = (
+    <Box
+      sx={{
+        height: "100%",
+        display: "flex",
+        flexDirection: "column",
+        bgcolor: "white",
+      }}
+    >
+      <Box
+        sx={{
+          px: 2,
+          py: 2.5,
+          textAlign: "center",
+        }}
+      >
+        <Box
+          component="img"
+          src="/atdmf-logo.jpeg"
+          alt="Annie T. Doe Memorial Foundation logo"
+          sx={{
+            width: 85,
+            height: 85,
+            objectFit: "contain",
+          }}
+        />
+
+        <Typography
+          variant="h6"
+          sx={{
+            color: "#0B2A78",
+            fontWeight: 800,
+            mt: 1,
+            lineHeight: 1.2,
+          }}
+        >
+          ATDMF-SMIS
+        </Typography>
+
+        <Typography
+          variant="caption"
+          sx={{
+            color: "#C8102E",
+            fontWeight: 700,
+          }}
+        >
+          School Management Portal
+        </Typography>
+      </Box>
+
+      <Divider />
+
+      <List
+        component="nav"
+        aria-label="Main navigation"
+        sx={{
+          px: 1.5,
+          py: 2,
+        }}
+      >
+        {visibleNavigationItems.map((item) => {
+          const selected = isPathSelected(item.path);
+
+          return (
+            <ListItemButton
+              key={item.path}
+              selected={selected}
+              onClick={() => handleNavigate(item.path)}
+              sx={{
+                minHeight: 48,
+                borderRadius: 2,
+                mb: 0.6,
+                px: 1.5,
+                color: selected
+                  ? "white"
+                  : "text.primary",
+                transition:
+                  "background-color 0.2s ease, color 0.2s ease",
+                "&:hover": {
+                  bgcolor: selected
+                    ? "#071B54"
+                    : "#EEF2FF",
+                },
+                "&.Mui-selected": {
+                  bgcolor: "#0B2A78",
+                  color: "white",
+                },
+                "&.Mui-selected:hover": {
+                  bgcolor: "#071B54",
+                },
+                "&.Mui-selected .MuiListItemIcon-root":
+                  {
+                    color: "white",
+                  },
+              }}
+            >
+              <ListItemIcon
+                sx={{
+                  minWidth: 42,
+                  color: selected
+                    ? "white"
+                    : "#0B2A78",
+                }}
+              >
+                {item.icon}
+              </ListItemIcon>
+
+              <ListItemText
+                primary={item.label}
+                slotProps={{
+                  primary: {
+                    fontWeight: selected ? 700 : 500,
+                    fontSize: 14.5,
+                  },
+                }}
+              />
+            </ListItemButton>
+          );
+        })}
+      </List>
+
+      <Box
+        sx={{
+          mt: "auto",
+          p: 1.5,
+        }}
+      >
+        <Divider sx={{ mb: 1.5 }} />
+
+        {canAccessSettings && (
+          <ListItemButton
+            selected={isPathSelected("/settings")}
+          onClick={() => handleNavigate("/settings")}
+          sx={{
+            minHeight: 48,
+            borderRadius: 2,
+            mb: 0.6,
+            "&.Mui-selected": {
+              bgcolor: "#EEF2FF",
+              color: "#0B2A78",
+            },
+            "&.Mui-selected .MuiListItemIcon-root":
+              {
+                color: "#0B2A78",
+              },
+          }}
+        >
+          <ListItemIcon
+            sx={{
+              minWidth: 42,
+              color: "#0B2A78",
+            }}
+          >
+            <Settings />
+          </ListItemIcon>
+
+          <ListItemText
+            primary="Settings"
+            slotProps={{
+              primary: {
+                fontWeight: isPathSelected("/settings")
+                  ? 700
+                  : 500,
+                fontSize: 14.5,
+              },
+            }}
+          />
+          </ListItemButton>
+        )}
+
+        <ListItemButton
+          onClick={handleLogout}
+          sx={{
+            minHeight: 48,
+            borderRadius: 2,
+            color: "#C8102E",
+            "&:hover": {
+              bgcolor: "#FFF1F2",
+            },
+          }}
+        >
+          <ListItemIcon
+            sx={{
+              minWidth: 42,
+              color: "#C8102E",
+            }}
+          >
+            <Logout />
+          </ListItemIcon>
+
+          <ListItemText
+            primary="Logout"
+            slotProps={{
+              primary: {
+                fontWeight: 600,
+                fontSize: 14.5,
+              },
+            }}
+          />
+        </ListItemButton>
+      </Box>
+    </Box>
+  );
+
+  return (
+    <Box
+      sx={{
+        display: "flex",
+        minHeight: "100vh",
+        bgcolor: "#F5F7FB",
+      }}
+    >
+      <AppBar
+        position="fixed"
+        elevation={0}
+        sx={{
+          bgcolor: "white",
+          color: "text.primary",
+          borderBottom: "1px solid #E5E7EB",
+          zIndex: theme.zIndex.drawer + 1,
+          width: {
+            xs: "100%",
+            md: `calc(100% - ${drawerWidth}px)`,
+          },
+          ml: {
+            xs: 0,
+            md: `${drawerWidth}px`,
+          },
+        }}
+      >
+        <Toolbar
+          sx={{
+            minHeight: {
+              xs: 64,
+              sm: 72,
+            },
+          }}
+        >
+          {!isDesktop && (
+            <Tooltip title="Open navigation">
+              <IconButton
+                edge="start"
+                aria-label="Open navigation menu"
+                onClick={() => setMobileOpen(true)}
+                sx={{
+                  mr: 1.5,
+                  color: "#0B2A78",
+                }}
+              >
+                <MenuIcon />
+              </IconButton>
+            </Tooltip>
+          )}
+
+          <Box
+            sx={{
+              flexGrow: 1,
+              minWidth: 0,
+            }}
+          >
+            <Typography
+              variant="subtitle1"
+              noWrap
+              sx={{
+                fontWeight: 800,
+                color: "#0B2A78",
+                lineHeight: 1.25,
+              }}
+            >
+              Annie T. Doe Memorial Foundation High School
+            </Typography>
+
+            <Typography
+              variant="caption"
+              color="text.secondary"
+              noWrap
+              sx={{
+                display: {
+                  xs: "none",
+                  sm: "block",
+                },
+              }}
+            >
+              School Management Information System
+            </Typography>
+          </Box>
+
+          <Stack
+            direction="row"
+            alignItems="center"
+            spacing={1}
+          >
+            <Box
+              sx={{
+                textAlign: "right",
+                display: {
+                  xs: "none",
+                  sm: "block",
+                },
+              }}
+            >
+              <Typography
+                variant="body2"
+                fontWeight={700}
+                noWrap
+              >
+                {user?.full_name ||
+                  user?.username ||
+                  "Portal User"}
+              </Typography>
+
+              <Typography
+                variant="caption"
+                color="text.secondary"
+                noWrap
+              >
+                {user?.role_display ||
+                  user?.role ||
+                  "User"}
+              </Typography>
+            </Box>
+
+            <Tooltip title="Account menu">
+              <IconButton
+                aria-label="Open account menu"
+                aria-controls={
+                  profileMenuAnchor
+                    ? "profile-menu"
+                    : undefined
+                }
+                aria-haspopup="true"
+                aria-expanded={
+                  profileMenuAnchor ? "true" : undefined
+                }
+                onClick={handleProfileMenuOpen}
+              >
+                <Avatar
+                  sx={{
+                    bgcolor: "#C8102E",
+                    width: 40,
+                    height: 40,
+                    fontWeight: 700,
+                  }}
+                >
+                  {getInitial(user)}
+                </Avatar>
+              </IconButton>
+            </Tooltip>
+          </Stack>
+
+          <Menu
+            id="profile-menu"
+            anchorEl={profileMenuAnchor}
+            open={Boolean(profileMenuAnchor)}
+            onClose={handleProfileMenuClose}
+            anchorOrigin={{
+              vertical: "bottom",
+              horizontal: "right",
+            }}
+            transformOrigin={{
+              vertical: "top",
+              horizontal: "right",
+            }}
+            slotProps={{
+              paper: {
+                sx: {
+                  mt: 1,
+                  minWidth: 230,
+                  borderRadius: 2,
+                  border: "1px solid #E5E7EB",
+                  boxShadow:
+                    "0 12px 30px rgba(15, 23, 42, 0.12)",
+                },
+              },
+            }}
+          >
+            <MenuItem disabled>
+              <Box sx={{ py: 0.5 }}>
+                <Typography fontWeight={700}>
+                  {user?.full_name ||
+                    user?.username ||
+                    "Portal User"}
+                </Typography>
+
+                <Typography
+                  variant="caption"
+                  color="text.secondary"
+                >
+                  {user?.role_display ||
+                    user?.role ||
+                    "User"}
+                </Typography>
+              </Box>
+            </MenuItem>
+
+            <Divider />
+
+            <MenuItem
+              onClick={() => {
+                handleProfileMenuClose();
+                navigate("/profile");
+              }}
+            >
+              <AccountCircle
+                sx={{
+                  mr: 1.5,
+                  color: "#0B2A78",
+                }}
+              />
+              My Profile
+            </MenuItem>
+
+            {canAccessSettings && (
+              <MenuItem
+                onClick={() => {
+                  handleProfileMenuClose();
+                  navigate("/settings");
+                }}
+              >
+              <Settings
+                sx={{
+                  mr: 1.5,
+                  color: "#0B2A78",
+                }}
+              />
+                Settings
+              </MenuItem>
+            )}
+
+            <Divider />
+
+            <MenuItem
+              onClick={handleLogout}
+              sx={{
+                color: "#C8102E",
+              }}
+            >
+              <Logout sx={{ mr: 1.5 }} />
+              Logout
+            </MenuItem>
+          </Menu>
+        </Toolbar>
+      </AppBar>
+
+      <Box
+        component="nav"
+        aria-label="Sidebar navigation"
+        sx={{
+          width: {
+            md: drawerWidth,
+          },
+          flexShrink: {
+            md: 0,
+          },
+        }}
+      >
+        <Drawer
+          variant="temporary"
+          open={mobileOpen}
+          onClose={() => setMobileOpen(false)}
+          ModalProps={{
+            keepMounted: true,
+          }}
+          sx={{
+            display: {
+              xs: "block",
+              md: "none",
+            },
+            "& .MuiDrawer-paper": {
+              width: drawerWidth,
+              boxSizing: "border-box",
+            },
+          }}
+        >
+          {drawerContent}
+        </Drawer>
+
+        <Drawer
+          variant="permanent"
+          open
+          sx={{
+            display: {
+              xs: "none",
+              md: "block",
+            },
+            "& .MuiDrawer-paper": {
+              width: drawerWidth,
+              boxSizing: "border-box",
+              borderRight: "1px solid #E5E7EB",
+            },
+          }}
+        >
+          {drawerContent}
+        </Drawer>
+      </Box>
+
+      <Box
+        component="main"
+        sx={{
+          flexGrow: 1,
+          width: {
+            xs: "100%",
+            md: `calc(100% - ${drawerWidth}px)`,
+          },
+          minWidth: 0,
+          minHeight: "100vh",
+          bgcolor: "#F5F7FB",
+          px: {
+            xs: 2,
+            sm: 3,
+            lg: 4,
+          },
+          pt: {
+            xs: 10,
+            sm: 11,
+          },
+          pb: 4,
+        }}
+      >
+        <Outlet />
+      </Box>
+    </Box>
+  );
+}

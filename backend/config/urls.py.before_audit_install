@@ -1,0 +1,70 @@
+from django.conf import settings
+from django.conf.urls.static import static
+from django.contrib import admin
+from django.urls import include, path
+
+
+urlpatterns = [
+    path("admin/", admin.site.urls),
+
+    # Authentication
+    path(
+        "api/auth/",
+        include("accounts.urls"),
+    ),
+
+    # Students
+    path(
+        "api/students/",
+        include("students.urls"),
+    ),
+
+    # Academics
+    path(
+        "api/academics/",
+        include("academics.urls"),
+    ),
+
+    # Examinations
+    path(
+        "api/examinations/",
+        include("examinations.urls"),
+    ),
+
+    # Finance
+    path(
+        "api/finance/",
+        include("finance.urls"),
+    ),
+
+    # Employees
+    path(
+        "api/employees/",
+        include("employees.urls"),
+    ),
+
+    # Teacher assignments and portals
+    path(
+        "api/teacher-assignments/",
+        include("teacher_assignments.urls"),
+    ),
+
+    # Attendance
+    path(
+        "api/attendance/",
+        include("attendance.urls"),
+    ),
+
+    # Communications
+    path(
+        "api/communications/",
+        include("communications.urls"),
+    ),
+]
+
+
+if settings.DEBUG:
+    urlpatterns += static(
+        settings.MEDIA_URL,
+        document_root=settings.MEDIA_ROOT,
+    )

@@ -1,0 +1,1377 @@
+from decimal import Decimal
+from django.db import models
+from decimal import Decimal
+from django.conf import settings
+from django.core.exceptions import ValidationError
+from django.core.validators import MinValueValidator
+from django.utils import timezone
+from students.models import Student
+from academics.models import AcademicYear,Term,GradeLevel
+class FeeType(models.Model):
+ name=models.CharField(max_length=100,unique=True); description=models.TextField(blank=True)
+ def __str__(self): return self.name
+class FeeStructure(models.Model):
+ fee_type=models.ForeignKey(FeeType,on_delete=models.CASCADE); grade=models.ForeignKey(GradeLevel,on_delete=models.CASCADE); academic_year=models.ForeignKey(AcademicYear,on_delete=models.CASCADE); term=models.ForeignKey(Term,on_delete=models.CASCADE); amount=models.DecimalField(max_digits=12,decimal_places=2)
+class StudentDiscount(models.Model):
+    class DiscountType(models.TextChoices):
+        FIXED = "FIXED", "Fixed Amount"
+        PERCENTAGE = "PERCENTAGE", "Percentage"
+
+    student = models.ForeignKey(
+        Student,
+        on_delete=models.CASCADE,
+        related_name="finance_discounts",
+    )
+
+    academic_year = models.ForeignKey(
+        AcademicYear,
+        on_delete=models.PROTECT,
+        related_name="student_discounts",
+    )
+
+    term = models.ForeignKey(
+        Term,
+        on_delete=models.PROTECT,
+        related_name="student_discounts",
+        null=True,
+        blank=True,
+    )
+
+    fee_type = models.ForeignKey(
+        FeeType,
+        on_delete=models.PROTECT,
+        related_name="student_discounts",
+        null=True,
+        blank=True,
+    )
+
+    name = models.CharField(max_length=150)
+
+    discount_type = models.CharField(
+        max_length=20,
+        choices=DiscountType.choices,
+        default=DiscountType.FIXED,
+    )
+
+    value = models.DecimalField(
+        max_digits=12,
+        decimal_places=2,
+        validators=[
+            MinValueValidator(Decimal("0.00"))
+        ],
+    )
+
+    reason = models.TextField(blank=True)
+    active = models.BooleanField(default=True)
+
+    approved_by = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name="approved_student_discounts",
+    )
+
+    created_at = models.DateTimeField(
+        auto_now_add=True,
+    )
+
+    updated_at = models.DateTimeField(
+        auto_now=True,
+    )
+
+    class Meta:
+        ordering = ["-created_at"]
+
+    def clean(self):
+        errors = {}
+
+        if (
+            self.term_id
+            and self.academic_year_id
+            and self.term.academic_year_id
+            != self.academic_year_id
+        ):
+            errors["term"] = (
+                "The selected term does not belong to "
+                "the selected academic year."
+            )
+
+        if (
+            self.discount_type
+            == self.DiscountType.PERCENTAGE
+            and self.value > Decimal("100")
+        ):
+            errors["value"] = (
+                "Percentage discount cannot exceed 100."
+            )
+
+        if errors:
+            raise ValidationError(errors)
+
+    def save(self, *args, **kwargs):
+        self.full_clean()
+        super().save(*args, **kwargs)
+
+    def __str__(self):
+        return f"{self.student.full_name} - {self.name}"
+class StudentInvoice(models.Model):
+ student=models.ForeignKey(Student,on_delete=models.CASCADE,related_name='invoices'); term=models.ForeignKey(Term,on_delete=models.CASCADE); invoice_number=models.CharField(max_length=40,unique=True); total_amount=models.DecimalField(max_digits=12,decimal_places=2); due_date=models.DateField(); created_at=models.DateTimeField(auto_now_add=True)
+ @property
+ def paid_amount(self): return sum((p.amount for p in self.payments.all()),Decimal('0'))
+ @property
+ def balance(self): return self.total_amount-self.paid_amount
+class InvoiceItem(models.Model):
+    invoice = models.ForeignKey(
+        StudentInvoice,
+        on_delete=models.CASCADE,
+        related_name="items",
+    )
+
+    fee_type = models.ForeignKey(
+        FeeType,
+        on_delete=models.PROTECT,
+        related_name="invoice_items",
+    )
+
+    description = models.CharField(
+        max_length=255,
+        blank=True,
+    )
+
+    amount = models.DecimalField(
+        max_digits=12,
+        decimal_places=2,
+        validators=[
+            MinValueValidator(Decimal("0.00"))
+        ],
+    )
+
+    discount_amount = models.DecimalField(
+        max_digits=12,
+        decimal_places=2,
+        default=Decimal("0.00"),
+        validators=[
+            MinValueValidator(Decimal("0.00"))
+        ],
+    )
+
+    class Meta:
+        constraints = [
+            models.UniqueConstraint(
+                fields=[
+                    "invoice",
+                    "fee_type",
+                ],
+                name="unique_invoice_fee_item",
+            )
+        ]
+
+    @property
+    def net_amount(self):
+        return max(
+            self.amount - self.discount_amount,
+            Decimal("0.00"),
+        )
+
+    def __str__(self):
+        return (
+            f"{self.invoice.invoice_number} - "
+            f"{self.fee_type.name}"
+        )
+class Payment(models.Model):
+    class Currency(models.TextChoices):
+        LRD = "LRD", "Liberian Dollar"
+        USD = "USD", "United States Dollar"
+
+    class Method(models.TextChoices):
+        BANK_DEPOSIT = (
+            "BANK_DEPOSIT",
+            "LBDI Bank Deposit",
+        )
+        CASH = "CASH", "Cash"
+        MOBILE_MONEY = (
+            "MOBILE_MONEY",
+            "Mobile Money",
+        )
+        BANK_TRANSFER = (
+            "BANK_TRANSFER",
+            "Bank Transfer",
+        )
+        OTHER = "OTHER", "Other"
+
+    invoice = models.ForeignKey(
+        StudentInvoice,
+        on_delete=models.PROTECT,
+        related_name="payments",
+    )
+
+    receipt_number = models.CharField(
+        max_length=40,
+        unique=True,
+        blank=True,
+    )
+
+    amount = models.DecimalField(
+        max_digits=12,
+        decimal_places=2,
+        validators=[
+            MinValueValidator(
+                Decimal("0.01")
+            )
+        ],
+    )
+
+    currency = models.CharField(
+        max_length=3,
+        choices=Currency.choices,
+        default=Currency.LRD,
+    )
+
+    method = models.CharField(
+        max_length=30,
+        choices=Method.choices,
+        default=Method.BANK_DEPOSIT,
+    )
+
+    reference = models.CharField(
+        max_length=100,
+        blank=True,
+    )
+
+    bank_slip_number = models.CharField(
+        max_length=100,
+        blank=True,
+    )
+
+    paid_at = models.DateTimeField(
+        default=timezone.now,
+    )
+
+    received_by = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name="received_school_payments",
+    )
+
+    receipt_printed = models.BooleanField(
+        default=False,
+    )
+
+    receipt_printed_by = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name="printed_school_receipts",
+    )
+
+    receipt_printed_at = models.DateTimeField(
+        null=True,
+        blank=True,
+    )
+
+    receipt_reprint_count = models.PositiveIntegerField(
+        default=0,
+    )
+
+    verified_against_statement = models.BooleanField(
+        default=False,
+    )
+
+    statement_verified_at = models.DateTimeField(
+        null=True,
+        blank=True,
+    )
+
+    statement_verified_by = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name="statement_verified_payments",
+    )
+
+    notes = models.TextField(blank=True)
+
+    created_at = models.DateTimeField(
+        auto_now_add=True,
+    )
+
+    updated_at = models.DateTimeField(
+        auto_now=True,
+    )
+
+    class Meta:
+        ordering = ["-paid_at"]
+
+        indexes = [
+            models.Index(
+                fields=["receipt_number"]
+            ),
+            models.Index(
+                fields=["bank_slip_number"]
+            ),
+            models.Index(
+                fields=["paid_at"]
+            ),
+        ]
+
+    def generate_receipt_number(self):
+        year = timezone.localdate().year
+
+        prefix = f"ATDMF-RCT-{year}-"
+
+        last_payment = (
+            Payment.objects
+            .filter(
+                receipt_number__startswith=prefix
+            )
+            .order_by("-id")
+            .first()
+        )
+
+        next_number = 1
+
+        if (
+            last_payment
+            and last_payment.receipt_number
+        ):
+            try:
+                next_number = (
+                    int(
+                        last_payment
+                        .receipt_number
+                        .split("-")[-1]
+                    )
+                    + 1
+                )
+            except (
+                ValueError,
+                IndexError,
+            ):
+                next_number = (
+                    last_payment.id + 1
+                )
+
+        receipt_number = (
+            f"{prefix}{next_number:05d}"
+        )
+
+        while Payment.objects.filter(
+            receipt_number=receipt_number
+        ).exists():
+            next_number += 1
+            receipt_number = (
+                f"{prefix}{next_number:05d}"
+            )
+
+        return receipt_number
+
+    def clean(self):
+        if self.invoice_id:
+            existing_paid = self.invoice.paid_amount
+
+            if self.pk:
+                previous = Payment.objects.filter(
+                    pk=self.pk
+                ).first()
+
+                if previous:
+                    existing_paid -= previous.amount
+
+            available_balance = (
+                self.invoice.total_amount
+                - existing_paid
+            )
+
+            if self.amount > available_balance:
+                raise ValidationError(
+                    {
+                        "amount": (
+                            "Payment cannot exceed the "
+                            f"invoice balance of "
+                            f"{available_balance}."
+                        )
+                    }
+                )
+
+    def save(self, *args, **kwargs):
+        if not self.receipt_number:
+            self.receipt_number = (
+                self.generate_receipt_number()
+            )
+
+        self.full_clean()
+        super().save(*args, **kwargs)
+
+    def __str__(self):
+        return (
+            f"{self.receipt_number} - "
+            f"{self.invoice.student.full_name}"
+        )
+class ExpenseCategory(models.Model):
+    name = models.CharField(
+        max_length=100,
+        unique=True,
+    )
+
+    description = models.TextField(
+        blank=True,
+    )
+
+    active = models.BooleanField(
+        default=True,
+    )
+
+    created_at = models.DateTimeField(
+        auto_now_add=True,
+    )
+
+    updated_at = models.DateTimeField(
+        auto_now=True,
+    )
+
+    class Meta:
+        ordering = ["name"]
+        verbose_name_plural = "Expense categories"
+
+    def __str__(self):
+        return self.name
+
+class Expense(models.Model):
+    class Currency(models.TextChoices):
+        LRD = "LRD", "Liberian Dollar"
+        USD = "USD", "United States Dollar"
+
+    class PaymentMethod(models.TextChoices):
+        CASH = "CASH", "Cash"
+        MOBILE_MONEY = (
+            "MOBILE_MONEY",
+            "Mobile Money",
+        )
+        BANK_TRANSFER = (
+            "BANK_TRANSFER",
+            "Bank Transfer",
+        )
+        CHECK = "CHECK", "Check"
+        OTHER = "OTHER", "Other"
+
+    expense_number = models.CharField(
+        max_length=40,
+        unique=True,
+        blank=True,
+    )
+
+    category = models.ForeignKey(
+        ExpenseCategory,
+        on_delete=models.PROTECT,
+        related_name="expenses",
+    )
+
+    description = models.TextField()
+
+    amount = models.DecimalField(
+        max_digits=12,
+        decimal_places=2,
+        validators=[
+            MinValueValidator(
+                Decimal("0.01")
+            )
+        ],
+    )
+
+    currency = models.CharField(
+        max_length=3,
+        choices=Currency.choices,
+        default=Currency.LRD,
+    )
+
+    date = models.DateField(
+        default=timezone.localdate,
+    )
+
+    payment_method = models.CharField(
+        max_length=30,
+        choices=PaymentMethod.choices,
+        default=PaymentMethod.CASH,
+    )
+
+    reference = models.CharField(
+        max_length=100,
+        blank=True,
+    )
+
+    vendor = models.CharField(
+        max_length=150,
+        blank=True,
+    )
+
+    recorded_by = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name="recorded_school_expenses",
+    )
+
+    approved_by = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name="approved_school_expenses",
+    )
+
+    approved = models.BooleanField(
+        default=False,
+    )
+
+    created_at = models.DateTimeField(
+        auto_now_add=True,
+    )
+
+    updated_at = models.DateTimeField(
+        auto_now=True,
+    )
+
+    class Meta:
+        ordering = [
+            "-date",
+            "-id",
+        ]
+
+    def generate_expense_number(self):
+        year = self.date.year
+
+        last_expense = (
+            Expense.objects
+            .filter(
+                expense_number__startswith=(
+                    f"ATDMF-EXP-{year}-"
+                )
+            )
+            .order_by("-id")
+            .first()
+        )
+
+        next_number = 1
+
+        if (
+            last_expense
+            and last_expense.expense_number
+        ):
+            try:
+                next_number = (
+                    int(
+                        last_expense
+                        .expense_number
+                        .split("-")[-1]
+                    )
+                    + 1
+                )
+            except (
+                ValueError,
+                IndexError,
+            ):
+                next_number = (
+                    last_expense.id + 1
+                )
+
+        expense_number = (
+            f"ATDMF-EXP-{year}-"
+            f"{next_number:05d}"
+        )
+
+        while Expense.objects.filter(
+            expense_number=expense_number
+        ).exists():
+            next_number += 1
+            expense_number = (
+                f"ATDMF-EXP-{year}-"
+                f"{next_number:05d}"
+            )
+
+        return expense_number
+
+    def save(self, *args, **kwargs):
+        if not self.expense_number:
+            self.expense_number = (
+                self.generate_expense_number()
+            )
+
+        super().save(*args, **kwargs)
+
+    def __str__(self):
+        return (
+            f"{self.expense_number} - "
+            f"{self.category.name}"
+        )
+class Sponsor(models.Model):
+    class SponsorType(models.TextChoices):
+        INDIVIDUAL = "INDIVIDUAL", "Individual"
+        ORGANIZATION = "ORGANIZATION", "Organization"
+        CHURCH = "CHURCH", "Church"
+        FOUNDATION = "FOUNDATION", "Foundation"
+        COMPANY = "COMPANY", "Company"
+        OTHER = "OTHER", "Other"
+
+    name = models.CharField(
+        max_length=200,
+        unique=True,
+    )
+
+    sponsor_type = models.CharField(
+        max_length=30,
+        choices=SponsorType.choices,
+        default=SponsorType.INDIVIDUAL,
+    )
+
+    contact_person = models.CharField(
+        max_length=150,
+        blank=True,
+    )
+
+    phone = models.CharField(
+        max_length=30,
+        blank=True,
+    )
+
+    email = models.EmailField(blank=True)
+
+    address = models.TextField(blank=True)
+
+    notes = models.TextField(blank=True)
+
+    active = models.BooleanField(default=True)
+
+    created_at = models.DateTimeField(
+        auto_now_add=True,
+    )
+
+    updated_at = models.DateTimeField(
+        auto_now=True,
+    )
+
+    class Meta:
+        ordering = ["name"]
+
+    def __str__(self):
+        return self.name
+
+
+class StudentSponsorship(models.Model):
+    class FundingStatus(models.TextChoices):
+        SPONSORED = "SPONSORED", "Sponsored"
+        PARTIALLY_SPONSORED = (
+            "PARTIALLY_SPONSORED",
+            "Partially Sponsored",
+        )
+        UNSPONSORED = "UNSPONSORED", "Unsponsored"
+
+    class CoverageType(models.TextChoices):
+        FULL = "FULL", "Full Cost"
+        FIXED_AMOUNT = "FIXED_AMOUNT", "Fixed Amount"
+        PERCENTAGE = "PERCENTAGE", "Percentage"
+
+    student = models.ForeignKey(
+        Student,
+        on_delete=models.CASCADE,
+        related_name="sponsorship_records",
+    )
+
+    academic_year = models.ForeignKey(
+        AcademicYear,
+        on_delete=models.PROTECT,
+        related_name="student_sponsorships",
+    )
+
+    sponsor = models.ForeignKey(
+        Sponsor,
+        on_delete=models.PROTECT,
+        related_name="student_sponsorships",
+        null=True,
+        blank=True,
+    )
+
+    funding_status = models.CharField(
+        max_length=30,
+        choices=FundingStatus.choices,
+        default=FundingStatus.UNSPONSORED,
+    )
+
+    coverage_type = models.CharField(
+        max_length=30,
+        choices=CoverageType.choices,
+        default=CoverageType.FULL,
+    )
+
+    coverage_value = models.DecimalField(
+        max_digits=12,
+        decimal_places=2,
+        default=Decimal("0.00"),
+        validators=[
+            MinValueValidator(Decimal("0.00"))
+        ],
+        help_text=(
+            "Enter the amount or percentage, depending "
+            "on the selected coverage type."
+        ),
+    )
+
+    start_date = models.DateField(
+        null=True,
+        blank=True,
+    )
+
+    end_date = models.DateField(
+        null=True,
+        blank=True,
+    )
+
+    reference_number = models.CharField(
+        max_length=100,
+        blank=True,
+    )
+
+    notes = models.TextField(blank=True)
+
+    active = models.BooleanField(default=True)
+
+    recorded_by = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name="recorded_sponsorships",
+    )
+
+    created_at = models.DateTimeField(
+        auto_now_add=True,
+    )
+
+    updated_at = models.DateTimeField(
+        auto_now=True,
+    )
+
+    class Meta:
+        ordering = [
+            "-academic_year__start_date",
+            "student__last_name",
+        ]
+
+        constraints = [
+            models.UniqueConstraint(
+                fields=[
+                    "student",
+                    "academic_year",
+                ],
+                name="unique_student_sponsorship_per_year",
+            )
+        ]
+
+    def clean(self):
+        errors = {}
+
+        if (
+            self.funding_status
+            == self.FundingStatus.SPONSORED
+            and not self.sponsor
+        ):
+            errors["sponsor"] = (
+                "A sponsor is required for a sponsored student."
+            )
+
+        if (
+            self.funding_status
+            == self.FundingStatus.PARTIALLY_SPONSORED
+            and not self.sponsor
+        ):
+            errors["sponsor"] = (
+                "A sponsor is required for a partially "
+                "sponsored student."
+            )
+
+        if (
+            self.coverage_type
+            == self.CoverageType.PERCENTAGE
+            and self.coverage_value > Decimal("100")
+        ):
+            errors["coverage_value"] = (
+                "Percentage coverage cannot exceed 100."
+            )
+
+        if errors:
+            raise ValidationError(errors)
+
+    def save(self, *args, **kwargs):
+        self.full_clean()
+        super().save(*args, **kwargs)
+
+    def __str__(self):
+        return (
+            f"{self.student.full_name} - "
+            f"{self.get_funding_status_display()} - "
+            f"{self.academic_year}"
+        )
+
+
+class BankAccount(models.Model):
+    bank_name = models.CharField(
+        max_length=150,
+        default="Liberian Bank for Development and Investment",
+    )
+
+    short_name = models.CharField(
+        max_length=30,
+        default="LBDI",
+    )
+
+    account_name = models.CharField(
+        max_length=200,
+    )
+
+    account_number = models.CharField(
+        max_length=100,
+        unique=True,
+    )
+
+    currency = models.CharField(
+        max_length=10,
+        default="LRD",
+    )
+
+    branch = models.CharField(
+        max_length=150,
+        blank=True,
+    )
+
+    active = models.BooleanField(default=True)
+
+    notes = models.TextField(blank=True)
+
+    created_at = models.DateTimeField(
+        auto_now_add=True,
+    )
+
+    def __str__(self):
+        return (
+            f"{self.short_name} - "
+            f"{self.account_number} ({self.currency})"
+        )
+
+
+class BankDeposit(models.Model):
+    class StudentCategory(models.TextChoices):
+        NEW = "NEW", "New Student"
+        RETURNING = "RETURNING", "Returning Student"
+
+    class SponsorshipStatus(models.TextChoices):
+        SPONSORED = "SPONSORED", "Sponsored"
+        PARTIALLY_SPONSORED = (
+            "PARTIALLY_SPONSORED",
+            "Partially Sponsored",
+        )
+        UNSPONSORED = "UNSPONSORED", "Unsponsored"
+
+    class VerificationStatus(models.TextChoices):
+        PENDING = (
+            "PENDING",
+            "Pending Verification",
+        )
+        VERIFIED = "VERIFIED", "Verified"
+        REJECTED = "REJECTED", "Rejected"
+        RECONCILED = (
+            "RECONCILED",
+            "Reconciled with Bank Statement",
+        )
+
+    student = models.ForeignKey(
+        Student,
+        on_delete=models.PROTECT,
+        related_name="bank_deposits",
+    )
+
+    invoice = models.ForeignKey(
+        StudentInvoice,
+        on_delete=models.PROTECT,
+        related_name="bank_deposits",
+        null=True,
+        blank=True,
+    )
+
+    bank_account = models.ForeignKey(
+        BankAccount,
+        on_delete=models.PROTECT,
+        related_name="deposits",
+    )
+
+    # Required details copied from the returned bank slip.
+    student_name_on_slip = models.CharField(
+        max_length=200,
+    )
+
+    bank_slip_number = models.CharField(
+        max_length=100,
+        unique=True,
+    )
+
+    payment_date = models.DateField()
+
+    amount = models.DecimalField(
+        max_digits=12,
+        decimal_places=2,
+        validators=[
+            MinValueValidator(Decimal("0.01"))
+        ],
+    )
+
+    currency = models.CharField(
+        max_length=10,
+        default="LRD",
+    )
+
+    academic_year = models.ForeignKey(
+        AcademicYear,
+        on_delete=models.PROTECT,
+        related_name="bank_deposits",
+    )
+
+    term = models.ForeignKey(
+        Term,
+        on_delete=models.PROTECT,
+        related_name="bank_deposits",
+        null=True,
+        blank=True,
+    )
+
+    student_category = models.CharField(
+        max_length=20,
+        choices=StudentCategory.choices,
+        default=StudentCategory.RETURNING,
+    )
+
+    sponsorship_status = models.CharField(
+        max_length=30,
+        choices=SponsorshipStatus.choices,
+        default=SponsorshipStatus.UNSPONSORED,
+    )
+
+    depositor_name = models.CharField(
+        max_length=200,
+        blank=True,
+    )
+
+    bank_reference = models.CharField(
+        max_length=150,
+        blank=True,
+    )
+
+    date_received_by_school = models.DateField(
+        default=timezone.localdate,
+    )
+
+    received_by = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name="received_bank_slips",
+    )
+
+    verification_status = models.CharField(
+        max_length=30,
+        choices=VerificationStatus.choices,
+        default=VerificationStatus.PENDING,
+    )
+
+    verified_by = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name="verified_bank_deposits",
+    )
+
+    verified_at = models.DateTimeField(
+        null=True,
+        blank=True,
+    )
+
+    rejection_reason = models.TextField(blank=True)
+
+    notes = models.TextField(blank=True)
+
+    payment = models.OneToOneField(
+        Payment,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name="bank_deposit",
+    )
+
+    created_at = models.DateTimeField(
+        auto_now_add=True,
+    )
+
+    updated_at = models.DateTimeField(
+        auto_now=True,
+    )
+
+    class Meta:
+        ordering = [
+            "-payment_date",
+            "-created_at",
+        ]
+
+        indexes = [
+            models.Index(
+                fields=["bank_slip_number"]
+            ),
+            models.Index(
+                fields=["payment_date"]
+            ),
+            models.Index(
+                fields=["verification_status"]
+            ),
+            models.Index(
+                fields=[
+                    "academic_year",
+                    "sponsorship_status",
+                ]
+            ),
+        ]
+
+    def clean(self):
+        errors = {}
+
+        if (
+            self.term_id
+            and self.academic_year_id
+            and self.term.academic_year_id
+            != self.academic_year_id
+        ):
+            errors["term"] = (
+                "The selected term does not belong to "
+                "the selected academic year."
+            )
+
+        if (
+            self.invoice_id
+            and self.invoice.student_id
+            != self.student_id
+        ):
+            errors["invoice"] = (
+                "The selected invoice does not belong "
+                "to this student."
+            )
+
+        if (
+            self.invoice_id
+            and self.amount > self.invoice.balance
+            and not self.payment_id
+        ):
+            errors["amount"] = (
+                "The bank deposit cannot exceed the "
+                f"invoice balance of {self.invoice.balance}."
+            )
+
+        if errors:
+            raise ValidationError(errors)
+
+    def save(self, *args, **kwargs):
+        if not self.student_name_on_slip and self.student_id:
+            self.student_name_on_slip = (
+                self.student.full_name
+            )
+
+        self.full_clean()
+        super().save(*args, **kwargs)
+
+    def __str__(self):
+        return (
+            f"{self.bank_slip_number} - "
+            f"{self.student_name_on_slip} - "
+            f"{self.amount} {self.currency}"
+        )
+class BankStatement(models.Model):
+    class Status(models.TextChoices):
+        UPLOADED = "UPLOADED", "Uploaded"
+        PROCESSING = "PROCESSING", "Processing"
+        REVIEW_REQUIRED = (
+            "REVIEW_REQUIRED",
+            "Review Required",
+        )
+        RECONCILED = (
+            "RECONCILED",
+            "Fully Reconciled",
+        )
+        FAILED = "FAILED", "Import Failed"
+
+    bank_account = models.ForeignKey(
+        BankAccount,
+        on_delete=models.PROTECT,
+        related_name="weekly_statements",
+    )
+
+    statement_number = models.CharField(
+        max_length=100,
+        blank=True,
+    )
+
+    week_start_date = models.DateField()
+
+    week_end_date = models.DateField()
+
+    statement_file = models.FileField(
+        upload_to=(
+            "finance/bank_statements/%Y/%m/"
+        ),
+    )
+
+    file_type = models.CharField(
+        max_length=20,
+        blank=True,
+        help_text="PDF, XLSX, XLS, or CSV",
+    )
+
+    status = models.CharField(
+        max_length=30,
+        choices=Status.choices,
+        default=Status.UPLOADED,
+    )
+
+    total_transactions = models.PositiveIntegerField(
+        default=0,
+    )
+
+    matched_transactions = models.PositiveIntegerField(
+        default=0,
+    )
+
+    unmatched_transactions = models.PositiveIntegerField(
+        default=0,
+    )
+
+    duplicate_transactions = models.PositiveIntegerField(
+        default=0,
+    )
+
+    total_statement_amount = models.DecimalField(
+        max_digits=14,
+        decimal_places=2,
+        default=Decimal("0.00"),
+    )
+
+    uploaded_by = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name="uploaded_bank_statements",
+    )
+
+    uploaded_at = models.DateTimeField(
+        auto_now_add=True,
+    )
+
+    reconciled_by = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name="reconciled_bank_statements",
+    )
+
+    reconciled_at = models.DateTimeField(
+        null=True,
+        blank=True,
+    )
+
+    notes = models.TextField(blank=True)
+
+    class Meta:
+        ordering = [
+            "-week_end_date",
+            "-uploaded_at",
+        ]
+
+        constraints = [
+            models.UniqueConstraint(
+                fields=[
+                    "bank_account",
+                    "week_start_date",
+                    "week_end_date",
+                ],
+                name=(
+                    "unique_weekly_bank_statement"
+                ),
+            )
+        ]
+
+    def clean(self):
+        if (
+            self.week_start_date
+            and self.week_end_date
+            and self.week_end_date
+            < self.week_start_date
+        ):
+            raise ValidationError(
+                {
+                    "week_end_date": (
+                        "Week end date cannot be "
+                        "before the week start date."
+                    )
+                }
+            )
+
+    def save(self, *args, **kwargs):
+        if self.statement_file:
+            filename = (
+                self.statement_file.name.lower()
+            )
+
+            if filename.endswith(".pdf"):
+                self.file_type = "PDF"
+            elif filename.endswith(".xlsx"):
+                self.file_type = "XLSX"
+            elif filename.endswith(".xls"):
+                self.file_type = "XLS"
+            elif filename.endswith(".csv"):
+                self.file_type = "CSV"
+
+        self.full_clean()
+        super().save(*args, **kwargs)
+
+    def __str__(self):
+        return (
+            f"{self.bank_account.short_name} "
+            f"{self.week_start_date} to "
+            f"{self.week_end_date}"
+        )
+
+
+class BankStatementTransaction(models.Model):
+    class MatchStatus(models.TextChoices):
+        UNMATCHED = "UNMATCHED", "Unmatched"
+        MATCHED = "MATCHED", "Matched"
+        DUPLICATE = "DUPLICATE", "Duplicate"
+        IGNORED = "IGNORED", "Ignored"
+        MANUAL_REVIEW = (
+            "MANUAL_REVIEW",
+            "Manual Review",
+        )
+
+    statement = models.ForeignKey(
+        BankStatement,
+        on_delete=models.CASCADE,
+        related_name="transactions",
+    )
+
+    transaction_date = models.DateField()
+
+    bank_slip_number = models.CharField(
+        max_length=100,
+        blank=True,
+    )
+
+    bank_reference = models.CharField(
+        max_length=150,
+        blank=True,
+    )
+
+    depositor_name = models.CharField(
+        max_length=200,
+        blank=True,
+    )
+
+    description = models.TextField(blank=True)
+
+    amount = models.DecimalField(
+        max_digits=14,
+        decimal_places=2,
+        validators=[
+            MinValueValidator(
+                Decimal("0.01")
+            )
+        ],
+    )
+
+    currency = models.CharField(
+        max_length=10,
+        default="LRD",
+    )
+
+    match_status = models.CharField(
+        max_length=30,
+        choices=MatchStatus.choices,
+        default=MatchStatus.UNMATCHED,
+    )
+
+    matched_bank_deposit = models.ForeignKey(
+        BankDeposit,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name=(
+            "statement_transactions"
+        ),
+    )
+
+    matched_payment = models.ForeignKey(
+        Payment,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name=(
+            "statement_transactions"
+        ),
+    )
+
+    matched_by = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name=(
+            "matched_statement_transactions"
+        ),
+    )
+
+    matched_at = models.DateTimeField(
+        null=True,
+        blank=True,
+    )
+
+    notes = models.TextField(blank=True)
+
+    created_at = models.DateTimeField(
+        auto_now_add=True,
+    )
+
+    class Meta:
+        ordering = [
+            "transaction_date",
+            "id",
+        ]
+
+        indexes = [
+            models.Index(
+                fields=["bank_slip_number"]
+            ),
+            models.Index(
+                fields=["bank_reference"]
+            ),
+            models.Index(
+                fields=["match_status"]
+            ),
+        ]
+
+    def __str__(self):
+        return (
+            f"{self.transaction_date} - "
+            f"{self.bank_slip_number or self.bank_reference} "
+            f"- {self.amount}"
+        )

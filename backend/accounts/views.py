@@ -1,13 +1,45 @@
-from rest_framework import permissions,viewsets
-from rest_framework.views import APIView
+from rest_framework import permissions, viewsets
 from rest_framework.response import Response
+from rest_framework.views import APIView
+
 from .models import User
-from .serializers import UserSerializer,UserCreateSerializer
+from .permissions import IsSuperAdminOrITAdmin
+from .serializers import (
+    UserCreateSerializer,
+    UserSerializer,
+)
+
+
 class CurrentUserView(APIView):
-    def get(self,request): return Response(UserSerializer(request.user,context={'request':request}).data)
+    permission_classes = [
+        permissions.IsAuthenticated,
+    ]
+
+    def get(self, request):
+        serializer = UserSerializer(
+            request.user,
+            context={
+                "request": request,
+            },
+        )
+
+        return Response(serializer.data)
+
+
 class UserViewSet(viewsets.ModelViewSet):
-    queryset=User.objects.all().order_by('-date_joined')
-    def get_serializer_class(self): return UserCreateSerializer if self.action=='create' else UserSerializer
-    def get_permissions(self):
-        if self.request.user.role not in [User.Role.SUPER_ADMIN,User.Role.IT_ADMIN]: return [permissions.IsAdminUser()]
-        return [permissions.IsAuthenticated()]
+    queryset = (
+        User.objects
+        .all()
+        .order_by("-date_joined")
+    )
+
+    permission_classes = [
+        permissions.IsAuthenticated,
+        IsSuperAdminOrITAdmin,
+    ]
+
+    def get_serializer_class(self):
+        if self.action == "create":
+            return UserCreateSerializer
+
+        return UserSerializer

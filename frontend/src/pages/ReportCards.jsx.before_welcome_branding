@@ -1,0 +1,1543 @@
+import {
+  useCallback,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+} from "react";
+
+import {
+  Assessment,
+  EmojiEvents,
+  Print,
+  Refresh,
+  School,
+  Search,
+} from "@mui/icons-material";
+
+import {
+  Alert,
+  Avatar,
+  Box,
+  Button,
+  Chip,
+  CircularProgress,
+  Divider,
+  FormControl,
+  Grid,
+  InputLabel,
+  MenuItem,
+  Paper,
+  Select,
+  Snackbar,
+  Stack,
+  Tab,
+  Table,
+  TableBody,
+  TableCell,
+  TableContainer,
+  TableHead,
+  TableRow,
+  Tabs,
+  TextField,
+  Typography,
+} from "@mui/material";
+
+import EmptyState from "../components/common/EmptyState";
+import StatCard from "../components/common/StatCard";
+import { ExaminationAPI } from "../api/examinations";
+
+function normalizeList(response) {
+  if (Array.isArray(response?.data)) {
+    return response.data;
+  }
+
+  return response?.data?.results || [];
+}
+
+function getErrorMessage(error) {
+  const data = error?.response?.data;
+
+  if (!data) {
+    return "An unexpected error occurred.";
+  }
+
+  if (typeof data === "string") {
+    return data;
+  }
+
+  if (data.detail) {
+    return data.detail;
+  }
+
+  return Object.entries(data)
+    .map(([field, value]) => {
+      const message = Array.isArray(value)
+        ? value.join(" ")
+        : String(value);
+
+      return `${field.replaceAll("_", " ")}: ${message}`;
+    })
+    .join(" ");
+}
+
+function formatScore(value) {
+  if (
+    value === null ||
+    value === undefined ||
+    value === ""
+  ) {
+    return "—";
+  }
+
+  const number = Number(value);
+
+  if (!Number.isFinite(number)) {
+    return "—";
+  }
+
+  return number.toFixed(2);
+}
+
+function formatPosition(position) {
+  const value = Number(position);
+
+  if (!value) return "—";
+
+  const lastTwo = value % 100;
+
+  if (lastTwo >= 11 && lastTwo <= 13) {
+    return `${value}th`;
+  }
+
+  switch (value % 10) {
+    case 1:
+      return `${value}st`;
+    case 2:
+      return `${value}nd`;
+    case 3:
+      return `${value}rd`;
+    default:
+      return `${value}th`;
+  }
+}
+
+export default function ReportCards() {
+  const printAreaRef = useRef(null);
+
+  const [tab, setTab] = useState(0);
+
+  const [academicYears, setAcademicYears] =
+    useState([]);
+  const [grades, setGrades] = useState([]);
+  const [classes, setClasses] = useState([]);
+  const [enrollments, setEnrollments] =
+    useState([]);
+  const [students, setStudents] = useState([]);
+
+  const [academicYear, setAcademicYear] =
+    useState("");
+  const [grade, setGrade] = useState("");
+  const [classSection, setClassSection] =
+    useState("");
+  const [student, setStudent] = useState("");
+
+  const [reportCard, setReportCard] =
+    useState(null);
+  const [classSummary, setClassSummary] =
+    useState([]);
+
+  const [loading, setLoading] = useState(true);
+  const [reportLoading, setReportLoading] =
+    useState(false);
+  const [summaryLoading, setSummaryLoading] =
+    useState(false);
+
+  const [error, setError] = useState("");
+
+  const [snackbar, setSnackbar] = useState({
+    open: false,
+    message: "",
+    severity: "success",
+  });
+
+  const showMessage = (
+    message,
+    severity = "success"
+  ) => {
+    setSnackbar({
+      open: true,
+      message,
+      severity,
+    });
+  };
+
+  const studentMap = useMemo(() => {
+    const map = new Map();
+
+    students.forEach((item) => {
+      map.set(String(item.id), item);
+    });
+
+    return map;
+  }, [students]);
+
+  const filteredClasses = useMemo(() => {
+    if (!grade) return classes;
+
+    return classes.filter(
+      (item) =>
+        String(item.grade) === String(grade)
+    );
+  }, [classes, grade]);
+
+  const filteredEnrollments = useMemo(() => {
+    if (!academicYear || !classSection) {
+      return [];
+    }
+
+    return enrollments.filter(
+      (item) =>
+        String(item.academic_year) ===
+          String(academicYear) &&
+        String(item.class_section) ===
+          String(classSection) &&
+        item.active !== false
+    );
+  }, [
+    enrollments,
+    academicYear,
+    classSection,
+  ]);
+
+  const classStudents = useMemo(() => {
+    return filteredEnrollments
+      .map((enrollment) => {
+        const studentRecord = studentMap.get(
+          String(enrollment.student)
+        );
+
+        return {
+          enrollmentId: enrollment.id,
+          studentId: enrollment.student,
+          admissionNumber:
+            studentRecord?.admission_number || "",
+          fullName:
+            studentRecord?.full_name ||
+            [
+              studentRecord?.first_name,
+              studentRecord?.middle_name,
+              studentRecord?.last_name,
+            ]
+              .filter(Boolean)
+              .join(" "),
+        };
+      })
+      .sort((a, b) =>
+        a.fullName.localeCompare(b.fullName)
+      );
+  }, [filteredEnrollments, studentMap]);
+
+  const selectedStudentPosition = useMemo(() => {
+    if (!student || classSummary.length === 0) {
+      return null;
+    }
+
+    return classSummary.find(
+      (item) =>
+        String(item.student_id) ===
+        String(student)
+    );
+  }, [student, classSummary]);
+
+  const loadReferenceData = useCallback(
+    async () => {
+      const [
+        yearsResponse,
+        gradesResponse,
+        classesResponse,
+        enrollmentsResponse,
+        studentsResponse,
+      ] = await Promise.all([
+        ExaminationAPI.getAcademicYears(),
+        ExaminationAPI.getGrades(),
+        ExaminationAPI.getClasses(),
+        ExaminationAPI.getEnrollments(),
+        ExaminationAPI.getStudents(),
+      ]);
+
+      const loadedYears =
+        normalizeList(yearsResponse);
+
+      setAcademicYears(loadedYears);
+      setGrades(normalizeList(gradesResponse));
+      setClasses(normalizeList(classesResponse));
+      setEnrollments(
+        normalizeList(enrollmentsResponse)
+      );
+      setStudents(normalizeList(studentsResponse));
+
+      const activeYear = loadedYears.find(
+        (item) => item.active
+      );
+
+      if (activeYear) {
+        setAcademicYear(activeYear.id);
+      }
+    },
+    []
+  );
+
+  useEffect(() => {
+    const initialize = async () => {
+      setLoading(true);
+      setError("");
+
+      try {
+        await loadReferenceData();
+      } catch (requestError) {
+        setError(getErrorMessage(requestError));
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    initialize();
+  }, [loadReferenceData]);
+
+  const loadClassSummary = async (
+    selectedClass = classSection,
+    selectedYear = academicYear
+  ) => {
+    if (!selectedClass || !selectedYear) {
+      return;
+    }
+
+    setSummaryLoading(true);
+
+    try {
+      const response =
+        await ExaminationAPI.getClassSummary(
+          selectedClass,
+          selectedYear
+        );
+
+      setClassSummary(
+        Array.isArray(response.data)
+          ? response.data
+          : response.data.results || []
+      );
+    } catch (requestError) {
+      setClassSummary([]);
+      showMessage(
+        getErrorMessage(requestError),
+        "error"
+      );
+    } finally {
+      setSummaryLoading(false);
+    }
+  };
+
+  const loadReportCard = async () => {
+    if (!academicYear || !student) {
+      showMessage(
+        "Select an academic year and student.",
+        "warning"
+      );
+      return;
+    }
+
+    setReportLoading(true);
+    setError("");
+
+    try {
+      const response =
+        await ExaminationAPI.getReportCard(
+          student,
+          academicYear
+        );
+
+      setReportCard(response.data);
+
+      if (classSection) {
+        await loadClassSummary();
+      }
+    } catch (requestError) {
+      setReportCard(null);
+      setError(getErrorMessage(requestError));
+    } finally {
+      setReportLoading(false);
+    }
+  };
+
+  const handlePrint = () => {
+    if (!reportCard) {
+      showMessage(
+        "Load a report card before printing.",
+        "warning"
+      );
+      return;
+    }
+
+    window.print();
+  };
+
+  const refreshPage = async () => {
+    setError("");
+
+    try {
+      await loadReferenceData();
+
+      if (tab === 0 && student) {
+        await loadReportCard();
+      }
+
+      if (tab === 1 && classSection) {
+        await loadClassSummary();
+      }
+
+      showMessage("Report data refreshed.");
+    } catch (requestError) {
+      showMessage(
+        getErrorMessage(requestError),
+        "error"
+      );
+    }
+  };
+
+  if (loading) {
+    return (
+      <Box
+        sx={{
+          minHeight: "60vh",
+          display: "flex",
+          justifyContent: "center",
+          alignItems: "center",
+        }}
+      >
+        <Stack
+          spacing={2}
+          sx={{ alignItems: "center" }}
+        >
+          <CircularProgress />
+
+          <Typography color="text.secondary">
+            Loading report card system...
+          </Typography>
+        </Stack>
+      </Box>
+    );
+  }
+
+  return (
+    <Box sx={{ pb: 4 }}>
+      <Stack spacing={3}>
+        <Stack
+          direction={{
+            xs: "column",
+            md: "row",
+          }}
+          spacing={2}
+          sx={{
+            justifyContent: "space-between",
+            alignItems: {
+              xs: "stretch",
+              md: "center",
+            },
+          }}
+        >
+          <Box>
+            <Typography
+              variant="h4"
+              component="h1"
+              sx={{
+                color: "#0B2A78",
+                fontWeight: 800,
+              }}
+            >
+              Report Cards & Class Ranking
+            </Typography>
+
+            <Typography color="text.secondary">
+              Generate yearly report cards and
+              review student positions by class.
+            </Typography>
+          </Box>
+
+          <Stack
+            direction={{
+              xs: "column",
+              sm: "row",
+            }}
+            spacing={1}
+          >
+            <Button
+              variant="outlined"
+              startIcon={<Refresh />}
+              onClick={refreshPage}
+            >
+              Refresh
+            </Button>
+
+            <Button
+              variant="contained"
+              startIcon={<Print />}
+              onClick={handlePrint}
+              disabled={!reportCard || tab !== 0}
+              sx={{
+                bgcolor: "#C8102E",
+                "&:hover": {
+                  bgcolor: "#9D0C24",
+                },
+              }}
+            >
+              Print Report Card
+            </Button>
+          </Stack>
+        </Stack>
+
+        {error && (
+          <Alert severity="error">
+            {error}
+          </Alert>
+        )}
+
+        <Tabs
+          value={tab}
+          onChange={(event, value) => {
+            setTab(value);
+
+            if (
+              value === 1 &&
+              classSection &&
+              academicYear
+            ) {
+              loadClassSummary();
+            }
+          }}
+          variant="scrollable"
+          scrollButtons="auto"
+        >
+          <Tab
+            icon={<Assessment />}
+            iconPosition="start"
+            label="Student Report Card"
+          />
+
+          <Tab
+            icon={<EmojiEvents />}
+            iconPosition="start"
+            label="Class Ranking"
+          />
+        </Tabs>
+
+        <Paper
+          variant="outlined"
+          sx={{
+            p: 2,
+            borderRadius: 3,
+          }}
+          className="no-print"
+        >
+          <Grid container spacing={2}>
+            <Grid
+              size={{
+                xs: 12,
+                sm: 6,
+                lg: 3,
+              }}
+            >
+              <FormControl fullWidth size="small">
+                <InputLabel>
+                  Academic Year
+                </InputLabel>
+
+                <Select
+                  label="Academic Year"
+                  value={academicYear}
+                  onChange={(event) => {
+                    setAcademicYear(
+                      event.target.value
+                    );
+                    setReportCard(null);
+                    setClassSummary([]);
+                  }}
+                >
+                  {academicYears.map((item) => (
+                    <MenuItem
+                      key={item.id}
+                      value={item.id}
+                    >
+                      {item.name}
+                      {item.active
+                        ? " — Active"
+                        : ""}
+                    </MenuItem>
+                  ))}
+                </Select>
+              </FormControl>
+            </Grid>
+
+            <Grid
+              size={{
+                xs: 12,
+                sm: 6,
+                lg: 3,
+              }}
+            >
+              <FormControl fullWidth size="small">
+                <InputLabel>Grade</InputLabel>
+
+                <Select
+                  label="Grade"
+                  value={grade}
+                  onChange={(event) => {
+                    setGrade(event.target.value);
+                    setClassSection("");
+                    setStudent("");
+                    setReportCard(null);
+                    setClassSummary([]);
+                  }}
+                >
+                  <MenuItem value="">
+                    Select Grade
+                  </MenuItem>
+
+                  {grades.map((item) => (
+                    <MenuItem
+                      key={item.id}
+                      value={item.id}
+                    >
+                      {item.name}
+                    </MenuItem>
+                  ))}
+                </Select>
+              </FormControl>
+            </Grid>
+
+            <Grid
+              size={{
+                xs: 12,
+                sm: 6,
+                lg: 3,
+              }}
+            >
+              <FormControl fullWidth size="small">
+                <InputLabel>Class</InputLabel>
+
+                <Select
+                  label="Class"
+                  value={classSection}
+                  disabled={!grade}
+                  onChange={(event) => {
+                    const value =
+                      event.target.value;
+
+                    setClassSection(value);
+                    setStudent("");
+                    setReportCard(null);
+                    setClassSummary([]);
+
+                    if (tab === 1 && value) {
+                      loadClassSummary(
+                        value,
+                        academicYear
+                      );
+                    }
+                  }}
+                >
+                  {filteredClasses.map((item) => (
+                    <MenuItem
+                      key={item.id}
+                      value={item.id}
+                    >
+                      {item.grade_name
+                        ? `${item.grade_name} `
+                        : ""}
+                      {item.name}
+                    </MenuItem>
+                  ))}
+                </Select>
+              </FormControl>
+            </Grid>
+
+            {tab === 0 && (
+              <Grid
+                size={{
+                  xs: 12,
+                  sm: 6,
+                  lg: 3,
+                }}
+              >
+                <FormControl fullWidth size="small">
+                  <InputLabel>Student</InputLabel>
+
+                  <Select
+                    label="Student"
+                    value={student}
+                    disabled={!classSection}
+                    onChange={(event) => {
+                      setStudent(
+                        event.target.value
+                      );
+                      setReportCard(null);
+                    }}
+                  >
+                    {classStudents.map((item) => (
+                      <MenuItem
+                        key={item.studentId}
+                        value={item.studentId}
+                      >
+                        {item.admissionNumber} —{" "}
+                        {item.fullName}
+                      </MenuItem>
+                    ))}
+                  </Select>
+                </FormControl>
+              </Grid>
+            )}
+
+            <Grid size={12}>
+              <Stack
+                direction={{
+                  xs: "column",
+                  sm: "row",
+                }}
+                spacing={1}
+                sx={{
+                  justifyContent: "flex-end",
+                }}
+              >
+                {tab === 0 ? (
+                  <Button
+                    variant="contained"
+                    startIcon={
+                      reportLoading ? (
+                        <CircularProgress
+                          size={18}
+                          color="inherit"
+                        />
+                      ) : (
+                        <Search />
+                      )
+                    }
+                    disabled={reportLoading}
+                    onClick={loadReportCard}
+                    sx={{
+                      bgcolor: "#0B2A78",
+                    }}
+                  >
+                    Load Report Card
+                  </Button>
+                ) : (
+                  <Button
+                    variant="contained"
+                    startIcon={
+                      summaryLoading ? (
+                        <CircularProgress
+                          size={18}
+                          color="inherit"
+                        />
+                      ) : (
+                        <EmojiEvents />
+                      )
+                    }
+                    disabled={summaryLoading}
+                    onClick={() =>
+                      loadClassSummary()
+                    }
+                    sx={{
+                      bgcolor: "#0B2A78",
+                    }}
+                  >
+                    Load Class Ranking
+                  </Button>
+                )}
+              </Stack>
+            </Grid>
+          </Grid>
+        </Paper>
+
+        {tab === 0 && (
+          <>
+            {!reportCard ? (
+              <EmptyState
+                title="No Report Card Loaded"
+                description="Select an academic year, grade, class, and student, then load the report card."
+              />
+            ) : (
+              <Box ref={printAreaRef}>
+                <ReportCardDocument
+                  reportCard={reportCard}
+                  position={
+                    selectedStudentPosition
+                      ?.position
+                  }
+                  classSize={classSummary.length}
+                />
+              </Box>
+            )}
+          </>
+        )}
+
+        {tab === 1 && (
+          <>
+            {summaryLoading ? (
+              <Paper
+                variant="outlined"
+                sx={{
+                  p: 6,
+                  textAlign: "center",
+                }}
+              >
+                <CircularProgress />
+              </Paper>
+            ) : classSummary.length === 0 ? (
+              <EmptyState
+                title="No Class Ranking Loaded"
+                description="Select an academic year and class, then load the ranking."
+              />
+            ) : (
+              <ClassRankingTable
+                rows={classSummary}
+              />
+            )}
+          </>
+        )}
+      </Stack>
+
+      <Snackbar
+        open={snackbar.open}
+        autoHideDuration={5000}
+        anchorOrigin={{
+          vertical: "bottom",
+          horizontal: "right",
+        }}
+        onClose={() =>
+          setSnackbar((current) => ({
+            ...current,
+            open: false,
+          }))
+        }
+      >
+        <Alert
+          severity={snackbar.severity}
+          variant="filled"
+          onClose={() =>
+            setSnackbar((current) => ({
+              ...current,
+              open: false,
+            }))
+          }
+        >
+          {snackbar.message}
+        </Alert>
+      </Snackbar>
+
+      <style>
+        {`
+          @media print {
+            body * {
+              visibility: hidden !important;
+            }
+
+            .report-card-print,
+            .report-card-print * {
+              visibility: visible !important;
+            }
+
+            .report-card-print {
+              position: absolute !important;
+              left: 0;
+              top: 0;
+              width: 100%;
+              background: white;
+              margin: 0;
+              padding: 12mm;
+              box-shadow: none !important;
+              border: none !important;
+            }
+
+            .no-print {
+              display: none !important;
+            }
+
+            @page {
+              size: landscape;
+              margin: 8mm;
+            }
+          }
+        `}
+      </style>
+    </Box>
+  );
+}
+
+function ReportCardDocument({
+  reportCard,
+  position,
+  classSize,
+}) {
+  const student = reportCard.student || {};
+  const academicYear =
+    reportCard.academic_year || {};
+  const classData = reportCard.class || {};
+  const subjects = reportCard.subjects || [];
+
+  const isLetterGrade =
+    classData.grading_system === "LETTER";
+
+  return (
+    <Paper
+      className="report-card-print"
+      variant="outlined"
+      sx={{
+        p: {
+          xs: 2,
+          md: 4,
+        },
+        borderRadius: 3,
+        bgcolor: "white",
+      }}
+    >
+      <Stack spacing={3}>
+        <Stack
+          direction="row"
+          spacing={2}
+          sx={{
+            alignItems: "center",
+            justifyContent: "center",
+            textAlign: "center",
+          }}
+        >
+          <Box
+            component="img"
+            src="/atdmf-logo.jpeg"
+            alt="ATDMF logo"
+            sx={{
+              width: 90,
+              height: 90,
+              objectFit: "contain",
+            }}
+          />
+
+          <Box>
+            <Typography
+              variant="h4"
+              sx={{
+                color: "#0B2A78",
+                fontWeight: 900,
+                lineHeight: 1.2,
+              }}
+            >
+              Annie T. Doe Memorial Foundation
+              High School
+            </Typography>
+
+            <Typography
+              variant="h6"
+              sx={{
+                color: "#C8102E",
+                fontWeight: 800,
+              }}
+            >
+              Official Student Report Card
+            </Typography>
+          </Box>
+        </Stack>
+
+        <Divider
+          sx={{
+            borderColor: "#0B2A78",
+            borderBottomWidth: 2,
+          }}
+        />
+
+        <Grid container spacing={2}>
+          <Grid
+            size={{
+              xs: 12,
+              sm: 6,
+              md: 3,
+            }}
+          >
+            <InfoItem
+              label="Student Name"
+              value={student.full_name}
+            />
+          </Grid>
+
+          <Grid
+            size={{
+              xs: 12,
+              sm: 6,
+              md: 3,
+            }}
+          >
+            <InfoItem
+              label="Admission Number"
+              value={student.admission_number}
+            />
+          </Grid>
+
+          <Grid
+            size={{
+              xs: 12,
+              sm: 6,
+              md: 3,
+            }}
+          >
+            <InfoItem
+              label="Academic Year"
+              value={academicYear.name}
+            />
+          </Grid>
+
+          <Grid
+            size={{
+              xs: 12,
+              sm: 6,
+              md: 3,
+            }}
+          >
+            <InfoItem
+              label="Class"
+              value={classData.name}
+            />
+          </Grid>
+
+          <Grid
+            size={{
+              xs: 12,
+              sm: 6,
+              md: 3,
+            }}
+          >
+            <InfoItem
+              label="Gender"
+              value={student.gender}
+            />
+          </Grid>
+
+          <Grid
+            size={{
+              xs: 12,
+              sm: 6,
+              md: 3,
+            }}
+          >
+            <InfoItem
+              label="Grading System"
+              value={
+                isLetterGrade
+                  ? "Letter Grade (A–F)"
+                  : "Numeric"
+              }
+            />
+          </Grid>
+
+          <Grid
+            size={{
+              xs: 12,
+              sm: 6,
+              md: 3,
+            }}
+          >
+            <InfoItem
+              label="Class Position"
+              value={
+                position
+                  ? `${formatPosition(position)} of ${
+                      classSize || "—"
+                    }`
+                  : "Not calculated"
+              }
+            />
+          </Grid>
+
+          <Grid
+            size={{
+              xs: 12,
+              sm: 6,
+              md: 3,
+            }}
+          >
+            <InfoItem
+              label="Overall Average"
+              value={formatScore(
+                reportCard.overall_average
+              )}
+            />
+          </Grid>
+        </Grid>
+
+        <TableContainer
+          sx={{
+            border: "1px solid #CBD5E1",
+          }}
+        >
+          <Table size="small">
+            <TableHead>
+              <TableRow
+                sx={{
+                  "& th": {
+                    bgcolor: "#0B2A78",
+                    color: "white",
+                    fontWeight: 800,
+                    textAlign: "center",
+                    border: "1px solid #CBD5E1",
+                    whiteSpace: "nowrap",
+                    fontSize: 12,
+                  },
+                }}
+              >
+                <TableCell>Subject</TableCell>
+                <TableCell>P1</TableCell>
+                <TableCell>P2</TableCell>
+                <TableCell>P3</TableCell>
+                <TableCell>
+                  1st Sem. Exam
+                </TableCell>
+                <TableCell>
+                  1st Average
+                </TableCell>
+                <TableCell>P4</TableCell>
+                <TableCell>P5</TableCell>
+                <TableCell>P6</TableCell>
+                <TableCell>
+                  2nd Sem. Exam
+                </TableCell>
+                <TableCell>
+                  2nd Average
+                </TableCell>
+                <TableCell>
+                  Yearly Average
+                </TableCell>
+                <TableCell>Grade</TableCell>
+                <TableCell>Remark</TableCell>
+              </TableRow>
+            </TableHead>
+
+            <TableBody>
+              {subjects.map((subject) => (
+                <TableRow key={subject.subject_id}>
+                  <ResultCell
+                    value={subject.subject_name}
+                    align="left"
+                    bold
+                  />
+                  <ResultCell
+                    value={formatScore(
+                      subject.first_period
+                    )}
+                  />
+                  <ResultCell
+                    value={formatScore(
+                      subject.second_period
+                    )}
+                  />
+                  <ResultCell
+                    value={formatScore(
+                      subject.third_period
+                    )}
+                  />
+                  <ResultCell
+                    value={formatScore(
+                      subject.first_semester_exam
+                    )}
+                  />
+                  <ResultCell
+                    value={formatScore(
+                      subject.first_average
+                    )}
+                    bold
+                  />
+                  <ResultCell
+                    value={formatScore(
+                      subject.fourth_period
+                    )}
+                  />
+                  <ResultCell
+                    value={formatScore(
+                      subject.fifth_period
+                    )}
+                  />
+                  <ResultCell
+                    value={formatScore(
+                      subject.sixth_period
+                    )}
+                  />
+                  <ResultCell
+                    value={formatScore(
+                      subject.second_semester_exam
+                    )}
+                  />
+                  <ResultCell
+                    value={formatScore(
+                      subject.second_average
+                    )}
+                    bold
+                  />
+                  <ResultCell
+                    value={formatScore(
+                      subject.yearly_average
+                    )}
+                    bold
+                  />
+                  <ResultCell
+                    value={subject.grade || "—"}
+                    bold
+                  />
+                  <ResultCell
+                    value={subject.remark || "—"}
+                  />
+                </TableRow>
+              ))}
+            </TableBody>
+          </Table>
+        </TableContainer>
+
+        <Grid container spacing={2}>
+          <Grid
+            size={{
+              xs: 12,
+              sm: 6,
+              md: 3,
+            }}
+          >
+            <SummaryCard
+              label="Subjects"
+              value={subjects.length}
+            />
+          </Grid>
+
+          <Grid
+            size={{
+              xs: 12,
+              sm: 6,
+              md: 3,
+            }}
+          >
+            <SummaryCard
+              label="Overall Average"
+              value={formatScore(
+                reportCard.overall_average
+              )}
+            />
+          </Grid>
+
+          <Grid
+            size={{
+              xs: 12,
+              sm: 6,
+              md: 3,
+            }}
+          >
+            <SummaryCard
+              label="Overall Grade"
+              value={
+                reportCard.overall_grade || "—"
+              }
+            />
+          </Grid>
+
+          <Grid
+            size={{
+              xs: 12,
+              sm: 6,
+              md: 3,
+            }}
+          >
+            <SummaryCard
+              label="Class Position"
+              value={
+                position
+                  ? formatPosition(position)
+                  : "—"
+              }
+            />
+          </Grid>
+        </Grid>
+
+        <Paper
+          variant="outlined"
+          sx={{
+            p: 2,
+            bgcolor: "#F8FAFC",
+          }}
+        >
+          <Typography
+            variant="caption"
+            color="text.secondary"
+          >
+            Overall Remark
+          </Typography>
+
+          <Typography fontWeight={700}>
+            {reportCard.overall_remark ||
+              "No remark available."}
+          </Typography>
+        </Paper>
+
+        <Grid container spacing={4} sx={{ pt: 4 }}>
+          {[
+            "Class Teacher",
+            "Registrar",
+            "Vice Principal",
+            "Principal",
+          ].map((title) => (
+            <Grid
+              key={title}
+              size={{
+                xs: 6,
+                md: 3,
+              }}
+            >
+              <Box
+                sx={{
+                  borderTop: "1px solid #111827",
+                  pt: 1,
+                  textAlign: "center",
+                }}
+              >
+                <Typography
+                  variant="body2"
+                  fontWeight={700}
+                >
+                  {title}
+                </Typography>
+              </Box>
+            </Grid>
+          ))}
+        </Grid>
+
+        <Divider />
+
+        <Typography
+          variant="caption"
+          color="text.secondary"
+          sx={{
+            textAlign: "center",
+          }}
+        >
+          Generated by ATDMF School Management
+          Information System • Powered by Prime
+          Tech Enterprise LLC
+        </Typography>
+      </Stack>
+    </Paper>
+  );
+}
+
+function ClassRankingTable({ rows }) {
+  const topStudent = rows[0];
+
+  return (
+    <Stack spacing={3}>
+      <Grid container spacing={2}>
+        <Grid
+          size={{
+            xs: 12,
+            sm: 6,
+            md: 3,
+          }}
+        >
+          <StatCard
+            title="Students Ranked"
+            value={rows.length}
+            icon={<School />}
+            color="#0B2A78"
+          />
+        </Grid>
+
+        <Grid
+          size={{
+            xs: 12,
+            sm: 6,
+            md: 3,
+          }}
+        >
+          <StatCard
+            title="Top Average"
+            value={formatScore(
+              topStudent?.overall_average
+            )}
+            icon={<EmojiEvents />}
+            color="#C8102E"
+          />
+        </Grid>
+      </Grid>
+
+      <Paper
+        variant="outlined"
+        sx={{
+          borderRadius: 3,
+          overflow: "hidden",
+        }}
+      >
+        <TableContainer>
+          <Table>
+            <TableHead>
+              <TableRow
+                sx={{
+                  "& th": {
+                    bgcolor: "#0B2A78",
+                    color: "white",
+                    fontWeight: 800,
+                  },
+                }}
+              >
+                <TableCell>Position</TableCell>
+                <TableCell>
+                  Admission Number
+                </TableCell>
+                <TableCell>Student</TableCell>
+                <TableCell>
+                  Overall Average
+                </TableCell>
+                <TableCell>Grade</TableCell>
+                <TableCell>Remark</TableCell>
+              </TableRow>
+            </TableHead>
+
+            <TableBody>
+              {rows.map((item) => (
+                <TableRow
+                  key={item.student_id}
+                  hover
+                >
+                  <TableCell>
+                    <Chip
+                      label={formatPosition(
+                        item.position
+                      )}
+                      color={
+                        item.position === 1
+                          ? "warning"
+                          : "default"
+                      }
+                    />
+                  </TableCell>
+
+                  <TableCell>
+                    {item.admission_number}
+                  </TableCell>
+
+                  <TableCell>
+                    <Stack
+                      direction="row"
+                      spacing={1.5}
+                      sx={{
+                        alignItems: "center",
+                      }}
+                    >
+                      <Avatar
+                        sx={{
+                          bgcolor:
+                            item.position === 1
+                              ? "#C8102E"
+                              : "#0B2A78",
+                        }}
+                      >
+                        {item.student_name
+                          ?.charAt(0)
+                          .toUpperCase() || "S"}
+                      </Avatar>
+
+                      <Typography fontWeight={700}>
+                        {item.student_name}
+                      </Typography>
+                    </Stack>
+                  </TableCell>
+
+                  <TableCell>
+                    {formatScore(
+                      item.overall_average
+                    )}
+                  </TableCell>
+
+                  <TableCell>
+                    <Chip
+                      size="small"
+                      label={item.grade || "—"}
+                      color="primary"
+                    />
+                  </TableCell>
+
+                  <TableCell>
+                    {item.remark || "—"}
+                  </TableCell>
+                </TableRow>
+              ))}
+            </TableBody>
+          </Table>
+        </TableContainer>
+      </Paper>
+    </Stack>
+  );
+}
+
+function InfoItem({ label, value }) {
+  return (
+    <Box>
+      <Typography
+        variant="caption"
+        color="text.secondary"
+      >
+        {label}
+      </Typography>
+
+      <Typography fontWeight={700}>
+        {value || "—"}
+      </Typography>
+    </Box>
+  );
+}
+
+function SummaryCard({ label, value }) {
+  return (
+    <Paper
+      variant="outlined"
+      sx={{
+        p: 2,
+        textAlign: "center",
+        bgcolor: "#F8FAFC",
+      }}
+    >
+      <Typography
+        variant="caption"
+        color="text.secondary"
+      >
+        {label}
+      </Typography>
+
+      <Typography
+        variant="h5"
+        fontWeight={800}
+        color="#0B2A78"
+      >
+        {value}
+      </Typography>
+    </Paper>
+  );
+}
+
+function ResultCell({
+  value,
+  align = "center",
+  bold = false,
+}) {
+  return (
+    <TableCell
+      align={align}
+      sx={{
+        border: "1px solid #CBD5E1",
+        fontWeight: bold ? 700 : 400,
+        fontSize: 12,
+        whiteSpace: "nowrap",
+      }}
+    >
+      {value}
+    </TableCell>
+  );
+}

@@ -1,0 +1,780 @@
+import {
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+} from "react";
+
+import {
+  Badge,
+  Print,
+  Search,
+} from "@mui/icons-material";
+
+import {
+  Alert,
+  Avatar,
+  Box,
+  Button,
+  CircularProgress,
+  FormControl,
+  Grid,
+  InputAdornment,
+  InputLabel,
+  MenuItem,
+  Paper,
+  Select,
+  Stack,
+  TextField,
+  Typography,
+} from "@mui/material";
+
+import JsBarcode from "jsbarcode";
+
+import api from "../api/client";
+
+
+const CARD_WIDTH = "85.60mm";
+const CARD_HEIGHT = "53.98mm";
+
+
+function results(response) {
+  return Array.isArray(response?.data)
+    ? response.data
+    : response?.data?.results || [];
+}
+
+
+function Barcode({ value }) {
+  const ref = useRef(null);
+
+  useEffect(() => {
+    if (!ref.current || !value) return;
+
+    JsBarcode(ref.current, value, {
+      format: "CODE128",
+      displayValue: true,
+      fontSize: 10,
+      height: 34,
+      width: 1.45,
+      margin: 0,
+      background: "transparent",
+    });
+  }, [value]);
+
+  return <svg ref={ref} />;
+}
+
+
+function CardShell({ children }) {
+  return (
+    <Box
+      sx={{
+        width: CARD_WIDTH,
+        height: CARD_HEIGHT,
+        bgcolor: "white",
+        color: "#111827",
+        borderRadius: "3mm",
+        overflow: "hidden",
+        boxShadow:
+          "0 12px 36px rgba(15,23,42,0.22)",
+        position: "relative",
+        border: "0.25mm solid #CBD5E1",
+        flexShrink: 0,
+        "@media print": {
+          boxShadow: "none",
+          breakInside: "avoid",
+          pageBreakInside: "avoid",
+        },
+      }}
+    >
+      {children}
+    </Box>
+  );
+}
+
+
+function FrontCard({
+  recordType,
+  person,
+  subtitle,
+  identifier,
+}) {
+  const photo =
+    recordType === "STUDENT"
+      ? person?.photo
+      : person?.photo_url || person?.photo;
+
+  return (
+    <CardShell>
+      <Box
+        sx={{
+          height: "14mm",
+          bgcolor: "#071B54",
+          color: "white",
+          px: "3mm",
+          display: "flex",
+          alignItems: "center",
+          gap: "2.2mm",
+        }}
+      >
+        <Box
+          component="img"
+          src="/atdmf-seal.jpeg"
+          alt="School seal"
+          sx={{
+            width: "10mm",
+            height: "10mm",
+            borderRadius: "50%",
+            bgcolor: "white",
+            objectFit: "cover",
+          }}
+        />
+
+        <Box sx={{ minWidth: 0 }}>
+          <Typography
+            sx={{
+              fontSize: "3.7mm",
+              lineHeight: 1,
+              fontWeight: 950,
+              whiteSpace: "nowrap",
+            }}
+          >
+            ANNIE T. DOE MEMORIAL ACADEMY
+          </Typography>
+
+          <Typography
+            sx={{
+              fontSize: "2.25mm",
+              opacity: 0.88,
+              mt: "0.8mm",
+            }}
+          >
+            Lower Buchanan, Grand Bassa County, Liberia
+          </Typography>
+        </Box>
+      </Box>
+
+      <Box
+        sx={{
+          display: "grid",
+          gridTemplateColumns: "27mm 1fr",
+          gap: "3mm",
+          p: "3.2mm",
+        }}
+      >
+        <Box>
+          <Avatar
+            variant="rounded"
+            src={photo || ""}
+            sx={{
+              width: "24mm",
+              height: "29mm",
+              border: "0.45mm solid #C8102E",
+              bgcolor: "#E2E8F0",
+              fontSize: "8mm",
+              fontWeight: 900,
+            }}
+          >
+            {person?.full_name
+              ?.charAt(0)
+              ?.toUpperCase()}
+          </Avatar>
+
+          <Typography
+            sx={{
+              bgcolor: "#C8102E",
+              color: "white",
+              textAlign: "center",
+              fontWeight: 900,
+              fontSize: "2.4mm",
+              width: "24mm",
+              mt: "1mm",
+              py: "0.65mm",
+              borderRadius: "0.8mm",
+            }}
+          >
+            {recordType === "STUDENT"
+              ? "STUDENT"
+              : "STAFF"}
+          </Typography>
+        </Box>
+
+        <Stack spacing="1.6mm" sx={{ minWidth: 0 }}>
+          <Box>
+            <Typography
+              sx={{
+                fontSize: "2.2mm",
+                color: "#64748B",
+                fontWeight: 800,
+              }}
+            >
+              FULL NAME
+            </Typography>
+
+            <Typography
+              sx={{
+                fontSize: "4mm",
+                fontWeight: 950,
+                color: "#071B54",
+                lineHeight: 1.08,
+              }}
+            >
+              {person?.full_name}
+            </Typography>
+          </Box>
+
+          <Box>
+            <Typography
+              sx={{
+                fontSize: "2.2mm",
+                color: "#64748B",
+                fontWeight: 800,
+              }}
+            >
+              IDENTIFICATION NUMBER
+            </Typography>
+
+            <Typography
+              sx={{
+                fontSize: "3.4mm",
+                fontWeight: 900,
+              }}
+            >
+              {identifier}
+            </Typography>
+          </Box>
+
+          <Box>
+            <Typography
+              sx={{
+                fontSize: "2.2mm",
+                color: "#64748B",
+                fontWeight: 800,
+              }}
+            >
+              {recordType === "STUDENT"
+                ? "CLASS"
+                : "POSITION"}
+            </Typography>
+
+            <Typography
+              sx={{
+                fontSize: "3.15mm",
+                fontWeight: 800,
+              }}
+            >
+              {subtitle || "Not assigned"}
+            </Typography>
+          </Box>
+        </Stack>
+      </Box>
+
+      <Box
+        sx={{
+          position: "absolute",
+          bottom: 0,
+          left: 0,
+          right: 0,
+          height: "3.2mm",
+          background:
+            "linear-gradient(90deg, #071B54 0 72%, #C8102E 72%)",
+        }}
+      />
+    </CardShell>
+  );
+}
+
+
+function BackCard({
+  person,
+  identifier,
+  recordType,
+}) {
+  return (
+    <CardShell>
+      <Box
+        sx={{
+          height: "9mm",
+          bgcolor: "#071B54",
+          color: "white",
+          display: "grid",
+          placeItems: "center",
+        }}
+      >
+        <Typography
+          sx={{
+            fontSize: "3.5mm",
+            fontWeight: 950,
+            letterSpacing: "0.4mm",
+          }}
+        >
+          OFFICIAL IDENTIFICATION CARD
+        </Typography>
+      </Box>
+
+      <Stack
+        sx={{
+          height: "calc(100% - 9mm)",
+          alignItems: "center",
+          justifyContent: "space-between",
+          py: "3mm",
+          px: "4mm",
+        }}
+      >
+        <Box
+          sx={{
+            width: "100%",
+            display: "flex",
+            justifyContent: "center",
+            overflow: "hidden",
+          }}
+        >
+          <Barcode value={identifier || "ATDMF"} />
+        </Box>
+
+        <Typography
+          sx={{
+            textAlign: "center",
+            fontSize: "2.5mm",
+            lineHeight: 1.35,
+            maxWidth: "73mm",
+          }}
+        >
+          This card remains the property of Annie T. Doe Memorial Academy.
+          Report a lost card to the school administration.
+        </Typography>
+
+        <Box
+          sx={{
+            width: "100%",
+            display: "grid",
+            gridTemplateColumns: "1fr 1fr",
+            gap: "5mm",
+            alignItems: "end",
+          }}
+        >
+          <Box>
+            <Box
+              sx={{
+                borderTop:
+                  "0.3mm solid #334155",
+              }}
+            />
+
+            <Typography
+              sx={{
+                textAlign: "center",
+                fontSize: "2.1mm",
+                mt: "0.7mm",
+              }}
+            >
+              Authorized Signature
+            </Typography>
+          </Box>
+
+          <Box
+            sx={{
+              display: "flex",
+              justifyContent: "flex-end",
+              alignItems: "center",
+              gap: "2mm",
+            }}
+          >
+            <Box
+              component="img"
+              src="/atdmf-seal.jpeg"
+              alt="Official stamp"
+              sx={{
+                width: "14mm",
+                height: "14mm",
+                borderRadius: "50%",
+                objectFit: "cover",
+                opacity: 0.9,
+              }}
+            />
+
+            <Box>
+              <Typography
+                sx={{
+                  fontSize: "2.1mm",
+                  fontWeight: 900,
+                }}
+              >
+                {recordType === "STUDENT"
+                  ? "Student ID"
+                  : "Staff ID"}
+              </Typography>
+
+              <Typography sx={{ fontSize: "2mm" }}>
+                {person?.full_name}
+              </Typography>
+            </Box>
+          </Box>
+        </Box>
+      </Stack>
+    </CardShell>
+  );
+}
+
+
+export default function IDCards() {
+  const [recordType, setRecordType] =
+    useState("STUDENT");
+  const [students, setStudents] = useState([]);
+  const [employees, setEmployees] = useState([]);
+  const [enrollments, setEnrollments] =
+    useState([]);
+  const [selectedId, setSelectedId] = useState("");
+  const [search, setSearch] = useState("");
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState("");
+
+  useEffect(() => {
+    const load = async () => {
+      setLoading(true);
+
+      try {
+        const [
+          studentResponse,
+          employeeResponse,
+          enrollmentResponse,
+        ] = await Promise.all([
+          api.get("/students/records/", {
+            params: {
+              page_size: 2000,
+              ordering: "last_name",
+            },
+          }),
+          api.get("/employees/employees/", {
+            params: {
+              page_size: 1000,
+              ordering: "last_name",
+            },
+          }),
+          api.get("/academics/enrollments/", {
+            params: {
+              page_size: 3000,
+              ordering: "-id",
+            },
+          }),
+        ]);
+
+        setStudents(results(studentResponse));
+        setEmployees(results(employeeResponse));
+        setEnrollments(results(enrollmentResponse));
+      } catch {
+        setError(
+          "Unable to load student and staff records."
+        );
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    load();
+  }, []);
+
+  useEffect(() => {
+    setSelectedId("");
+    setSearch("");
+  }, [recordType]);
+
+  const records =
+    recordType === "STUDENT"
+      ? students
+      : employees;
+
+  const filteredRecords = useMemo(() => {
+    const term = search.trim().toLowerCase();
+
+    if (!term) return records;
+
+    return records.filter((item) =>
+      [
+        item.full_name,
+        item.admission_number,
+        item.employee_id,
+        item.phone,
+        item.email,
+      ]
+        .filter(Boolean)
+        .some((value) =>
+          String(value)
+            .toLowerCase()
+            .includes(term)
+        )
+    );
+  }, [records, search]);
+
+  const person = records.find(
+    (item) =>
+      String(item.id) === String(selectedId)
+  );
+
+  const enrollment = useMemo(
+    () =>
+      enrollments.find(
+        (item) =>
+          String(
+            item.student?.id ||
+              item.student
+          ) === String(person?.id) &&
+          item.active !== false
+      ),
+    [enrollments, person]
+  );
+
+  const identifier =
+    recordType === "STUDENT"
+      ? person?.admission_number
+      : person?.employee_id;
+
+  const subtitle =
+    recordType === "STUDENT"
+      ? enrollment?.class_name ||
+        enrollment?.grade_name ||
+        enrollment?.class_section_name ||
+        ""
+      : [
+          person?.position_name,
+          person?.department_name,
+        ]
+          .filter(Boolean)
+          .join(" — ");
+
+  if (loading) {
+    return (
+      <Box
+        sx={{
+          minHeight: 420,
+          display: "grid",
+          placeItems: "center",
+        }}
+      >
+        <CircularProgress />
+      </Box>
+    );
+  }
+
+  return (
+    <Box>
+      <style>
+        {`
+          @page {
+            size: auto;
+            margin: 8mm;
+          }
+
+          @media print {
+            body * {
+              visibility: hidden !important;
+            }
+
+            #id-card-print-area,
+            #id-card-print-area * {
+              visibility: visible !important;
+            }
+
+            #id-card-print-area {
+              position: absolute;
+              left: 0;
+              top: 0;
+              width: 100%;
+              display: flex !important;
+              flex-wrap: wrap;
+              gap: 8mm;
+              background: white !important;
+              padding: 0 !important;
+            }
+          }
+        `}
+      </style>
+
+      <Stack spacing={3}>
+        <Box>
+          <Typography
+            variant="h4"
+            fontWeight={900}
+            color="#0B2A78"
+          >
+            ID Card Generator
+          </Typography>
+
+          <Typography color="text.secondary">
+            Create CR80 computerized student and staff identity cards with Code 128 barcodes.
+          </Typography>
+        </Box>
+
+        {error && (
+          <Alert severity="error">
+            {error}
+          </Alert>
+        )}
+
+        <Paper
+          variant="outlined"
+          sx={{ p: 3, borderRadius: 3 }}
+        >
+          <Grid
+            container
+            spacing={2}
+            alignItems="center"
+          >
+            <Grid size={{ xs: 12, md: 3 }}>
+              <FormControl fullWidth>
+                <InputLabel>Card Type</InputLabel>
+
+                <Select
+                  label="Card Type"
+                  value={recordType}
+                  onChange={(event) =>
+                    setRecordType(
+                      event.target.value
+                    )
+                  }
+                >
+                  <MenuItem value="STUDENT">
+                    Student ID Card
+                  </MenuItem>
+
+                  <MenuItem value="EMPLOYEE">
+                    Staff ID Card
+                  </MenuItem>
+                </Select>
+              </FormControl>
+            </Grid>
+
+            <Grid size={{ xs: 12, md: 4 }}>
+              <TextField
+                fullWidth
+                label="Search Records"
+                value={search}
+                onChange={(event) =>
+                  setSearch(event.target.value)
+                }
+                slotProps={{
+                  input: {
+                    startAdornment: (
+                      <InputAdornment position="start">
+                        <Search />
+                      </InputAdornment>
+                    ),
+                  },
+                }}
+              />
+            </Grid>
+
+            <Grid size={{ xs: 12, md: 4 }}>
+              <FormControl fullWidth>
+                <InputLabel>Select Person</InputLabel>
+
+                <Select
+                  label="Select Person"
+                  value={selectedId}
+                  onChange={(event) =>
+                    setSelectedId(
+                      event.target.value
+                    )
+                  }
+                >
+                  {filteredRecords.map((item) => (
+                    <MenuItem
+                      key={item.id}
+                      value={item.id}
+                    >
+                      {item.full_name}
+                      {" — "}
+                      {item.admission_number ||
+                        item.employee_id}
+                    </MenuItem>
+                  ))}
+                </Select>
+              </FormControl>
+            </Grid>
+
+            <Grid size={{ xs: 12, md: 1 }}>
+              <Button
+                fullWidth
+                variant="contained"
+                startIcon={<Print />}
+                disabled={!person}
+                onClick={() => window.print()}
+                sx={{
+                  minHeight: 56,
+                  bgcolor: "#C8102E",
+                }}
+              >
+                Print
+              </Button>
+            </Grid>
+          </Grid>
+        </Paper>
+
+        {!person ? (
+          <Paper
+            variant="outlined"
+            sx={{
+              minHeight: 320,
+              display: "grid",
+              placeItems: "center",
+              borderRadius: 3,
+            }}
+          >
+            <Stack
+              alignItems="center"
+              spacing={1}
+            >
+              <Badge
+                sx={{
+                  fontSize: 58,
+                  color: "#94A3B8",
+                }}
+              />
+
+              <Typography color="text.secondary">
+                Select a student or employee to generate an ID card.
+              </Typography>
+            </Stack>
+          </Paper>
+        ) : (
+          <Paper
+            variant="outlined"
+            sx={{
+              p: { xs: 2, md: 4 },
+              borderRadius: 3,
+              overflowX: "auto",
+              bgcolor: "#E2E8F0",
+            }}
+          >
+            <Stack
+              id="id-card-print-area"
+              direction={{
+                xs: "column",
+                lg: "row",
+              }}
+              spacing={3}
+              sx={{
+                width: "max-content",
+                mx: "auto",
+              }}
+            >
+              <FrontCard
+                recordType={recordType}
+                person={person}
+                identifier={identifier}
+                subtitle={subtitle}
+              />
+
+              <BackCard
+                recordType={recordType}
+                person={person}
+                identifier={identifier}
+              />
+            </Stack>
+          </Paper>
+        )}
+      </Stack>
+    </Box>
+  );
+}

@@ -1,0 +1,128 @@
+import {
+  Alert,
+  Box,
+  Button,
+  Paper,
+  Typography,
+} from "@mui/material";
+
+import {
+  Navigate,
+  useNavigate,
+} from "react-router-dom";
+
+import { useAuth } from "../context/AuthContext";
+
+
+export default function RoleRoute({
+  roles = [],
+  children,
+}) {
+  const navigate = useNavigate();
+  const { user, loading } = useAuth();
+
+  if (loading) {
+    return null;
+  }
+
+  if (!user) {
+    return (
+      <Navigate
+        to="/login"
+        replace
+      />
+    );
+  }
+
+  const userRole = String(
+    user.role || ""
+  ).toUpperCase();
+
+  const allowedRoles = roles.map(
+    (role) =>
+      String(role).toUpperCase()
+  );
+
+  /*
+   * Access is now based only on the roles
+   * explicitly assigned to each route.
+   *
+   * This prevents SUPER_ADMIN from opening
+   * Teacher, Student, or Parent portals
+   * without the required linked profile.
+   */
+  const isAllowed =
+    allowedRoles.length === 0 ||
+    allowedRoles.includes(userRole);
+
+  if (!isAllowed) {
+    return (
+      <Box
+        sx={{
+          minHeight: "65vh",
+          display: "grid",
+          placeItems: "center",
+        }}
+      >
+        <Paper
+          variant="outlined"
+          sx={{
+            p: 4,
+            maxWidth: 550,
+            width: "100%",
+            borderRadius: 3,
+            textAlign: "center",
+          }}
+        >
+          <Alert
+            severity="error"
+            sx={{
+              mb: 2,
+              textAlign: "left",
+            }}
+          >
+            You do not have permission to access this page.
+          </Alert>
+
+          <Typography
+            variant="h5"
+            fontWeight={900}
+            color="#0B2A78"
+          >
+            Access Denied
+          </Typography>
+
+          <Typography
+            color="text.secondary"
+            sx={{
+              mt: 1,
+              mb: 3,
+            }}
+          >
+            Your account role is{" "}
+            <strong>
+              {user.role_display ||
+                user.role ||
+                "Unknown"}
+            </strong>
+            .
+          </Typography>
+
+          <Button
+            variant="contained"
+            onClick={() =>
+              navigate("/")
+            }
+            sx={{
+              bgcolor: "#0B2A78",
+            }}
+          >
+            Return to Dashboard
+          </Button>
+        </Paper>
+      </Box>
+    );
+  }
+
+  return children;
+}

@@ -1,6 +1,92 @@
-from django.contrib import admin
-from django.urls import include,path
 from django.conf import settings
 from django.conf.urls.static import static
-urlpatterns=[path('admin/',admin.site.urls),path('api/auth/',include('accounts.urls')),path('api/students/',include('students.urls')),path('api/staff/',include('staff.urls')),path('api/academics/',include('academics.urls')),path('api/attendance/',include('attendance.urls')),path('api/examinations/',include('examinations.urls')),path('api/finance/',include('finance.urls')),path('api/communications/',include('communications.urls')),path('api/audit/',include('audit.urls'))]
-if settings.DEBUG: urlpatterns += static(settings.MEDIA_URL,document_root=settings.MEDIA_ROOT)
+from django.contrib import admin
+from django.urls import include, path
+
+
+urlpatterns = [
+    path("admin/", admin.site.urls),
+
+    # Authentication
+    path(
+        "api/auth/",
+        include("accounts.urls"),
+    ),
+
+    # Students
+    path(
+        "api/students/",
+        include("students.urls"),
+    ),
+
+    # Academics
+    path(
+        "api/academics/",
+        include("academics.urls"),
+    ),
+
+    # Examinations
+    path(
+        "api/examinations/",
+        include("examinations.urls"),
+    ),
+
+    # Finance
+    path(
+        "api/finance/",
+        include("finance.urls"),
+    ),
+
+    # Employees
+    path(
+        "api/employees/",
+        include("employees.urls"),
+    ),
+
+    # Teacher assignments and portals
+    path(
+        "api/teacher-assignments/",
+        include("teacher_assignments.urls"),
+    ),
+
+    # Attendance
+    path(
+        "api/attendance/",
+        include("attendance.urls"),
+    ),
+
+    # Communications
+    path(
+        "api/communications/",
+        include("communications.urls"),
+    ),
+    # Audit Trail
+    path(
+        "api/audit/",
+        include("audit.urls"),
+    ),
+
+    # System Settings
+    path(
+        "api/school-settings/",
+        include("school_settings.urls"),
+    ),
+
+    path("api/import-center/", include("import_center.urls")),
+
+    # Academic Results Importer
+    path(
+        "api/academic-import/",
+        include("academic_import.urls"),
+    ),
+
+    path("api/system-tools/", include("system_tools.urls")),
+
+]
+
+
+if settings.DEBUG:
+    urlpatterns += static(
+        settings.MEDIA_URL,
+        document_root=settings.MEDIA_ROOT,
+    )

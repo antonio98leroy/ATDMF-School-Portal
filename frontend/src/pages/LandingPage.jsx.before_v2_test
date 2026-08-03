@@ -1,0 +1,219 @@
+import {
+  Login,
+} from "@mui/icons-material";
+
+import {
+  AppBar,
+  Box,
+  Button,
+  Container,
+  Stack,
+  Toolbar,
+  Typography,
+} from "@mui/material";
+
+import { useNavigate } from "react-router-dom";
+
+
+export default function LandingPage() {
+  const navigate = useNavigate();
+
+  return (
+    <Box
+      sx={{
+        minHeight: "100vh",
+        bgcolor: "#071B54",
+        overflow: "hidden",
+      }}
+    >
+      <AppBar
+        position="absolute"
+        elevation={0}
+        sx={{
+          bgcolor: "rgba(7, 27, 84, 0.82)",
+          backdropFilter: "blur(10px)",
+          borderBottom:
+            "1px solid rgba(255,255,255,0.15)",
+        }}
+      >
+        <Toolbar
+          sx={{
+            minHeight: {
+              xs: 72,
+              md: 86,
+            },
+          }}
+        >
+          <Stack
+            direction="row"
+            spacing={1.5}
+            alignItems="center"
+            sx={{
+              flexGrow: 1,
+              minWidth: 0,
+            }}
+          >
+            <Box
+              component="img"
+              src="/atdmf-seal.jpeg"
+              alt="Annie T. Doe Memorial Academy seal"
+              sx={{
+                width: {
+                  xs: 50,
+                  md: 64,
+                },
+                height: {
+                  xs: 50,
+                  md: 64,
+                },
+                borderRadius: "50%",
+                objectFit: "cover",
+                bgcolor: "white",
+                flexShrink: 0,
+              }}
+            />
+
+            <Box sx={{ minWidth: 0 }}>
+              <Typography
+                fontWeight={900}
+                sx={{
+                  fontSize: {
+                    xs: 14,
+                    sm: 18,
+                    md: 21,
+                  },
+                  lineHeight: 1.15,
+                }}
+              >
+                Annie T. Doe Memorial Academy
+              </Typography>
+
+              <Typography
+                variant="caption"
+                sx={{
+                  opacity: 0.84,
+                  display: {
+                    xs: "none",
+                    sm: "block",
+                  },
+                }}
+              >
+                Lower Buchanan, Grand Bassa County, Liberia
+              </Typography>
+            </Box>
+          </Stack>
+
+          <Button
+            variant="contained"
+            startIcon={<Login />}
+            onClick={() => navigate("/login")}
+            sx={{
+              bgcolor: "#C8102E",
+              fontWeight: 900,
+              whiteSpace: "nowrap",
+              "&:hover": {
+                bgcolor: "#A30D25",
+              },
+            }}
+          >
+            Student Portal
+          </Button>
+        </Toolbar>
+      </AppBar>
+
+      <Box
+        sx={{
+          minHeight: "100vh",
+          display: "grid",
+          gridTemplateColumns: {
+            xs: "1fr",
+            md: "1.1fr 0.9fr",
+          },
+        }}
+      >
+        <Box
+          sx={{
+            position: "relative",
+            minHeight: {
+              xs: "58vh",
+              md: "100vh",
+            },
+            backgroundImage:
+              "linear-gradient(90deg, rgba(7,27,84,0.25), rgba(7,27,84,0.72)), url('/welcome-science.jpeg')",
+            backgroundSize: "cover",
+            backgroundPosition: "center",
+          }}
+        >
+          <Container
+            maxWidth="md"
+            sx={{
+              height: "100%",
+              display: "flex",
+              alignItems: "flex-end",
+              pb: {
+                xs: 5,
+                md: 10,
+              },
+              pt: 14,
+            }}
+          >
+            <Box
+              sx={{
+                color: "white",
+                maxWidth: 780,
+              }}
+            >
+              <Typography
+                variant="overline"
+                sx={{
+                  letterSpacing: 3,
+                  fontWeight: 900,
+                }}
+              >
+                Welcome to ATDMA
+              </Typography>
+
+              <Typography
+                sx={{
+                  mt: 1,
+                  fontWeight: 950,
+                  lineHeight: 1.02,
+                  fontSize: {
+                    xs: "2.55rem",
+                    sm: "3.6rem",
+                    md: "4.7rem",
+                  },
+                }}
+              >
+                Empowering Today’s Generation for a Better Tomorrow
+              </Typography>
+            </Box>
+          </Container>
+        </Box>
+
+        <Box
+          sx={{
+            position: "relative",
+            minHeight: {
+              xs: "42vh",
+              md: "100vh",
+            },
+            backgroundImage:
+              "linear-gradient(rgba(200,16,46,0.12), rgba(7,27,84,0.3)), url('/welcome-graduation.jpeg')",
+            backgroundSize: "cover",
+            backgroundPosition: "center",
+          }}
+        >
+          <Box
+            sx={{
+              position: "absolute",
+              inset: 0,
+              background:
+                "linear-gradient(180deg, rgba(7,27,84,0.04), rgba(7,27,84,0.42))",
+            }}
+          />
+        </Box>
+      </Box>
+    </Box>
+  );
+}
