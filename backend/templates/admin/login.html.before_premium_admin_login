@@ -1,0 +1,96 @@
+{% extends "admin/base_site.html" %}
+{% load i18n static %}
+
+{% block extrastyle %}
+  {{ block.super }}
+  <link rel="stylesheet" href="{% static 'admin/atdmf-admin-login.css' %}">
+{% endblock %}
+
+{% block bodyclass %}{{ block.super }} login atdmf-admin-login{% endblock %}
+
+{% block nav-sidebar %}{% endblock %}
+
+{% block content %}
+<div class="atdmf-login-shell">
+  <section class="atdmf-login-card">
+    <div class="atdmf-top-line"></div>
+
+    <div class="atdmf-brand">
+      <img
+        src="{% static 'admin/atdmf-seal.jpeg' %}"
+        alt="Annie T. Doe Memorial Academy seal"
+      >
+
+      <h1>Annie T. Doe Memorial Academy</h1>
+
+      <p class="atdmf-address">
+        Lower Buchanan, Grand Bassa County, Liberia
+      </p>
+
+      <p class="atdmf-portal-title">
+        Backend Administration Portal
+      </p>
+    </div>
+
+    {% if form.errors and not form.non_field_errors %}
+      <div class="atdmf-alert">
+        Please correct the error below.
+      </div>
+    {% endif %}
+
+    {% if form.non_field_errors %}
+      {% for error in form.non_field_errors %}
+        <div class="atdmf-alert">
+          {{ error }}
+        </div>
+      {% endfor %}
+    {% endif %}
+
+    <form
+      action="{{ app_path }}"
+      method="post"
+      id="login-form"
+      class="atdmf-login-form"
+    >
+      {% csrf_token %}
+
+      <div class="atdmf-field">
+        <label for="id_username">
+          Username
+        </label>
+        {{ form.username }}
+      </div>
+
+      <div class="atdmf-field">
+        <label for="id_password">
+          Password
+        </label>
+        {{ form.password }}
+      </div>
+
+      <input
+        type="hidden"
+        name="next"
+        value="{{ next }}"
+      >
+
+      <button
+        type="submit"
+        class="atdmf-login-button"
+      >
+        Sign In
+      </button>
+    </form>
+
+    <div class="atdmf-login-footer">
+      <p>
+        Authorized personnel only
+      </p>
+
+      <small>
+        © {% now "Y" %} Annie T. Doe Memorial Academy
+      </small>
+    </div>
+  </section>
+</div>
+{% endblock %}

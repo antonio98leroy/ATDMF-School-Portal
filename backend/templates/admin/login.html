@@ -1,0 +1,150 @@
+{% extends "admin/base_site.html" %}
+{% load static %}
+
+{% block extrastyle %}
+  {{ block.super }}
+  <link rel="stylesheet" href="{% static 'admin/atdmf-premium-login.css' %}">
+{% endblock %}
+
+{% block bodyclass %}{{ block.super }} login atdmf-premium-login{% endblock %}
+{% block nav-sidebar %}{% endblock %}
+{% block breadcrumbs %}{% endblock %}
+
+{% block content %}
+<div class="atdmf-page">
+  <section class="atdmf-left">
+    <div class="atdmf-left-inner">
+      <header class="atdmf-identity">
+        <img
+          src="{% static 'admin/atdmf-seal.jpeg' %}"
+          alt="Annie T. Doe Memorial Academy seal"
+          class="atdmf-seal"
+        >
+
+        <div>
+          <h1>Annie T. Doe<br>Memorial Academy</h1>
+          <p>Backend Administration Portal</p>
+        </div>
+      </header>
+
+      <article class="atdmf-card">
+        <div class="atdmf-welcome">
+          <span>Welcome Back</span>
+          <h2>Sign in to your account</h2>
+          <div class="atdmf-shield">◆</div>
+          <p>
+            Enter your credentials to access the
+            <strong>Backend Administration Portal</strong>.
+          </p>
+        </div>
+
+        {% if form.errors and not form.non_field_errors %}
+          <div class="atdmf-alert">
+            Please correct the highlighted fields.
+          </div>
+        {% endif %}
+
+        {% if form.non_field_errors %}
+          {% for error in form.non_field_errors %}
+            <div class="atdmf-alert">
+              {{ error }}
+            </div>
+          {% endfor %}
+        {% endif %}
+
+        <form
+          action="{{ app_path }}"
+          method="post"
+          id="login-form"
+          class="atdmf-form"
+        >
+          {% csrf_token %}
+
+          <div class="atdmf-field">
+            <label for="id_username">Username</label>
+            <div class="atdmf-input-wrap">
+              <span class="atdmf-input-icon">◉</span>
+              {{ form.username }}
+            </div>
+          </div>
+
+          <div class="atdmf-field">
+            <label for="id_password">Password</label>
+            <div class="atdmf-input-wrap">
+              <span class="atdmf-input-icon">◆</span>
+              {{ form.password }}
+            </div>
+          </div>
+
+          <input
+            type="hidden"
+            name="next"
+            value="{{ next }}"
+          >
+
+          <button
+            type="submit"
+            class="atdmf-submit"
+          >
+            <span>◆</span>
+            Sign In
+          </button>
+        </form>
+
+        <div class="atdmf-authorized">
+          <div class="atdmf-authorized-title">
+            Authorized Personnel Only
+          </div>
+
+          <div class="atdmf-role-grid">
+            <div><span>◆</span> Owner</div>
+            <div><span>◆</span> Super Admin</div>
+            <div><span>◆</span> Developer</div>
+            <div><span>◆</span> IT Admin</div>
+          </div>
+        </div>
+      </article>
+
+      <footer class="atdmf-copyright">
+        © {% now "Y" %} Annie T. Doe Memorial Academy. All rights reserved.
+      </footer>
+    </div>
+  </section>
+
+  <section class="atdmf-right">
+    <div class="atdmf-right-overlay"></div>
+
+    <div class="atdmf-quote">
+      <span>“</span>
+      <p>Empowering Today’s Generation for a Better Tomorrow</p>
+      <span>”</span>
+    </div>
+
+    <div class="atdmf-features">
+      <div>
+        <span class="atdmf-feature-icon blue">◆</span>
+        <strong>Secure</strong>
+        <small>Protected Access</small>
+      </div>
+
+      <div>
+        <span class="atdmf-feature-icon red">◆</span>
+        <strong>Reliable</strong>
+        <small>Data Protection</small>
+      </div>
+
+      <div>
+        <span class="atdmf-feature-icon green">◆</span>
+        <strong>Monitor</strong>
+        <small>System Health</small>
+      </div>
+
+      <div>
+        <span class="atdmf-feature-icon gold">◆</span>
+        <strong>Backup</strong>
+        <small>Daily Backups</small>
+      </div>
+    </div>
+  </section>
+</div>
+{% endblock %}

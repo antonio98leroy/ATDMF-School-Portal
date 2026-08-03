@@ -1,0 +1,245 @@
+:root {
+  --atdmf-navy: #071b54;
+  --atdmf-blue: #0b2a78;
+  --atdmf-red: #c8102e;
+  --atdmf-light: #f4f7fb;
+  --atdmf-border: #dbe3ef;
+  --atdmf-text: #172033;
+}
+
+html,
+body.atdmf-admin-login {
+  min-height: 100%;
+  background:
+    linear-gradient(
+      135deg,
+      rgba(7, 27, 84, 0.97),
+      rgba(11, 42, 120, 0.88),
+      rgba(200, 16, 46, 0.58)
+    ),
+    url("/static/admin/atdmf-admin-bg.jpeg")
+      center / cover fixed no-repeat;
+}
+
+body.atdmf-admin-login #header,
+body.atdmf-admin-login .breadcrumbs,
+body.atdmf-admin-login #nav-sidebar,
+body.atdmf-admin-login .toggle-nav-sidebar {
+  display: none !important;
+}
+
+body.atdmf-admin-login #container {
+  min-width: 0;
+  background: transparent;
+}
+
+body.atdmf-admin-login #content {
+  padding: 0;
+  margin: 0;
+}
+
+body.atdmf-admin-login #content-main {
+  float: none;
+}
+
+.atdmf-login-shell {
+  min-height: 100vh;
+  display: grid;
+  place-items: center;
+  padding: 32px 18px;
+}
+
+.atdmf-login-card {
+  width: 100%;
+  max-width: 450px;
+  background: rgba(255, 255, 255, 0.97);
+  border-radius: 24px;
+  padding: 38px 36px 34px;
+  box-shadow:
+    0 30px 90px rgba(7, 27, 84, 0.42);
+  border: 1px solid rgba(255, 255, 255, 0.72);
+  backdrop-filter: blur(16px);
+  position: relative;
+  overflow: hidden;
+}
+
+.atdmf-top-line {
+  position: absolute;
+  inset: 0 0 auto;
+  height: 8px;
+  background:
+    linear-gradient(
+      90deg,
+      var(--atdmf-blue) 0 66%,
+      var(--atdmf-red) 66%
+    );
+}
+
+.atdmf-brand {
+  text-align: center;
+}
+
+.atdmf-brand img {
+  width: 132px;
+  height: 132px;
+  object-fit: contain;
+  border-radius: 50%;
+  background: #fff;
+  box-shadow:
+    0 10px 32px rgba(7, 27, 84, 0.18);
+  margin-bottom: 16px;
+}
+
+.atdmf-brand h1 {
+  margin: 0;
+  color: var(--atdmf-blue);
+  font-size: 26px;
+  line-height: 1.15;
+  font-weight: 900;
+}
+
+.atdmf-address {
+  margin: 10px 0 0;
+  color: #64748b;
+  font-size: 13px;
+  font-weight: 700;
+}
+
+.atdmf-portal-title {
+  margin: 10px 0 0;
+  color: var(--atdmf-red);
+  font-size: 16px;
+  font-weight: 900;
+}
+
+.atdmf-login-form {
+  margin-top: 28px;
+}
+
+.atdmf-field {
+  margin-bottom: 18px;
+}
+
+.atdmf-field label {
+  display: block;
+  margin-bottom: 7px;
+  color: var(--atdmf-text);
+  font-size: 13px;
+  font-weight: 800;
+}
+
+.atdmf-field input {
+  width: 100%;
+  box-sizing: border-box;
+  padding: 13px 14px;
+  border: 1px solid var(--atdmf-border);
+  border-radius: 11px;
+  background: #fff;
+  color: var(--atdmf-text);
+  font-size: 15px;
+  outline: none;
+  transition:
+    border-color 0.2s ease,
+    box-shadow 0.2s ease;
+}
+
+.atdmf-field input:focus {
+  border-color: var(--atdmf-blue);
+  box-shadow:
+    0 0 0 4px rgba(11, 42, 120, 0.1);
+}
+
+.atdmf-login-button {
+  width: 100%;
+  border: 0;
+  border-radius: 11px;
+  padding: 14px 18px;
+  background:
+    linear-gradient(
+      90deg,
+      var(--atdmf-blue),
+      var(--atdmf-navy)
+    );
+  color: #fff;
+  font-size: 15px;
+  font-weight: 900;
+  cursor: pointer;
+  transition:
+    transform 0.2s ease,
+    box-shadow 0.2s ease;
+}
+
+.atdmf-login-button:hover {
+  transform: translateY(-1px);
+  box-shadow:
+    0 10px 24px rgba(7, 27, 84, 0.22);
+}
+
+.atdmf-alert {
+  margin-top: 22px;
+  border-radius: 10px;
+  padding: 12px 14px;
+  color: #991b1b;
+  background: #fee2e2;
+  border: 1px solid #fecaca;
+  font-weight: 700;
+}
+
+.atdmf-login-footer {
+  text-align: center;
+  margin-top: 28px;
+  color: #64748b;
+}
+
+.atdmf-login-footer p {
+  margin: 0 0 5px;
+  font-weight: 800;
+  color: var(--atdmf-blue);
+}
+
+.atdmf-login-footer small {
+  font-size: 11px;
+}
+
+.atdmf-admin-branding {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+}
+
+.atdmf-admin-branding img {
+  width: 56px;
+  height: 56px;
+  border-radius: 50%;
+  object-fit: contain;
+  background: #fff;
+}
+
+.atdmf-admin-branding h1 {
+  margin: 0;
+  color: #fff;
+  font-size: 21px;
+  font-weight: 900;
+}
+
+.atdmf-admin-branding p {
+  margin: 4px 0 0;
+  color: rgba(255, 255, 255, 0.82);
+  font-size: 12px;
+}
+
+@media (max-width: 560px) {
+  .atdmf-login-card {
+    padding: 30px 22px 28px;
+    border-radius: 18px;
+  }
+
+  .atdmf-brand img {
+    width: 108px;
+    height: 108px;
+  }
+
+  .atdmf-brand h1 {
+    font-size: 22px;
+  }
+}

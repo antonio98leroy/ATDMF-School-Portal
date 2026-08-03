@@ -1,0 +1,7 @@
+{% extends "admin/base_site.html" %}
+{% load static %}
+{% block extrastyle %}{{ block.super }}<link rel="stylesheet" href="{% static 'admin/atdmf-admin.css' %}">{% endblock %}
+{% block branding %}
+<div class="atdmf-branding"><img src="{% static 'admin/atdmf-seal.jpeg' %}" alt="ATDMF seal"><div><h1>Annie T. Doe Memorial Academy</h1><p>Lower Buchanan, Grand Bassa County, Liberia</p></div></div>
+{% endblock %}
+{% block nav-global %}<div class="atdmf-nav-actions"><a href="/api/system-tools/health/" target="_blank">System Health</a><a href="/api/system-tools/backups/" target="_blank">Backups API</a></div>{% endblock %}

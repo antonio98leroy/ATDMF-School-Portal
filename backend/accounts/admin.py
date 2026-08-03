@@ -5,3 +5,23 @@ from .models import User
 class CustomUserAdmin(UserAdmin):
     fieldsets=UserAdmin.fieldsets+(('School Portal',{'fields':('role','phone_number','profile_photo','is_first_login')}),)
     list_display=('username','first_name','last_name','email','role','is_active')
+
+# ==========================================================
+# ATDMF DJANGO ADMIN BRANDING
+# ==========================================================
+
+# ==========================================================
+# ATDMF DJANGO ADMIN BRANDING
+# ==========================================================
+
+# ==========================================================
+# ATDMF MODERN DJANGO ADMIN BRANDING
+# ==========================================================
+
+# ==========================================================
+# ATDMF MODERN DJANGO ADMIN BRANDING
+# ==========================================================
+admin.site.site_header = "Annie T. Doe Memorial Academy"
+admin.site.site_title = "ATDMF Backend Administration"
+admin.site.index_title = "School Management Administration"
+admin.site.index_template = "admin/atdmf_index.html"

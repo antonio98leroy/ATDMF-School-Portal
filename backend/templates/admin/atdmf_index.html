@@ -1,0 +1,368 @@
+{% extends "admin/base_site.html" %}
+{% load static atdmf_admin %}
+
+{% block bodyclass %}
+  {{ block.super }} dashboard atdmf-dashboard
+{% endblock %}
+
+{% block breadcrumbs %}{% endblock %}
+
+{% block content %}
+{% dashboard_stats as stats %}
+{% system_status as system %}
+{% recent_audit_logs 8 as activities %}
+
+<div class="atdmf-dashboard-layout">
+
+  <aside class="atdmf-dashboard-sidebar">
+
+    <a
+      href="/admin/"
+      class="atdmf-dashboard-home"
+    >
+      <span>⌂</span>
+      Dashboard
+    </a>
+
+    <p class="atdmf-sidebar-label">
+      School Management
+    </p>
+
+    {% for app in app_list %}
+      <a
+        href="{{ app.app_url }}"
+        class="atdmf-sidebar-link"
+      >
+        <span>◆</span>
+        {{ app.name }}
+        <b>›</b>
+      </a>
+    {% endfor %}
+
+    <p class="atdmf-sidebar-label">
+      System and Settings
+    </p>
+
+    <a
+      href="/admin/school_settings/schoolsettings/"
+      class="atdmf-sidebar-link"
+    >
+      <span>⚙</span>
+      School Settings
+      <b>›</b>
+    </a>
+
+    <a
+      href="/admin/import_center/importbatch/"
+      class="atdmf-sidebar-link"
+    >
+      <span>⇧</span>
+      Import Center
+      <b>›</b>
+    </a>
+
+    <a
+      href="/admin/audit/auditlog/"
+      class="atdmf-sidebar-link"
+    >
+      <span>◇</span>
+      Audit Trail
+      <b>›</b>
+    </a>
+
+    <a
+      href="/api/system-tools/health/"
+      target="_blank"
+      class="atdmf-sidebar-link"
+    >
+      <span>⌘</span>
+      System Health
+      <b>›</b>
+    </a>
+
+    <div class="atdmf-sidebar-info">
+      <strong>Quick Information</strong>
+
+      <p>
+        <span>Academic Year</span>
+        <b>
+          {{ stats.academic_year|default:"Not set" }}
+        </b>
+      </p>
+
+      <p>
+        <span>Current Term</span>
+        <b>
+          {{ stats.current_term|default:"Not set" }}
+        </b>
+      </p>
+
+      <p>
+        <span>Server Time</span>
+        <b>{% now "M d, Y H:i" %}</b>
+      </p>
+    </div>
+  </aside>
+
+  <main class="atdmf-dashboard-main">
+
+    <section class="atdmf-dashboard-hero">
+      <div>
+        <span class="atdmf-dashboard-hero-icon">
+          ♙
+        </span>
+
+        <div>
+          <h1>Dashboard Overview</h1>
+
+          <p>
+            Monitor and manage the school system efficiently.
+          </p>
+        </div>
+      </div>
+
+      <div class="atdmf-dashboard-photo"></div>
+    </section>
+
+    <section class="atdmf-stat-grid">
+
+      <article class="atdmf-stat-card">
+        <div class="atdmf-stat-icon blue">
+          👥
+        </div>
+
+        <div>
+          <span>Total Students</span>
+          <strong>{{ stats.students }}</strong>
+
+          <a href="/admin/students/student/">
+            View students →
+          </a>
+        </div>
+      </article>
+
+      <article class="atdmf-stat-card">
+        <div class="atdmf-stat-icon green">
+          ♙
+        </div>
+
+        <div>
+          <span>Total Employees</span>
+          <strong>{{ stats.employees }}</strong>
+
+          <a href="/admin/employees/employee/">
+            View employees →
+          </a>
+        </div>
+      </article>
+
+      <article class="atdmf-stat-card">
+        <div class="atdmf-stat-icon purple">
+          ▤
+        </div>
+
+        <div>
+          <span>Total Classes</span>
+          <strong>{{ stats.classes }}</strong>
+
+          <a href="/admin/academics/classsection/">
+            View classes →
+          </a>
+        </div>
+      </article>
+
+      <article class="atdmf-stat-card">
+        <div class="atdmf-stat-icon orange">
+          $
+        </div>
+
+        <div>
+          <span>Revenue (LRD)</span>
+          <strong>
+            {{ stats.revenue_lrd }}
+          </strong>
+
+          <a href="/admin/finance/payment/">
+            View finance →
+          </a>
+        </div>
+      </article>
+    </section>
+
+    <section class="atdmf-dashboard-columns">
+
+      <article class="atdmf-dashboard-panel">
+        <header>
+          <h2>System Status</h2>
+        </header>
+
+        <div class="atdmf-system-grid">
+
+          <div>
+            <span>◉</span>
+            <p>Database</p>
+
+            <strong
+              class="{% if system.database %}success{% else %}danger{% endif %}"
+            >
+              {% if system.database %}
+                Connected
+              {% else %}
+                Unavailable
+              {% endif %}
+            </strong>
+          </div>
+
+          <div>
+            <span>♨</span>
+            <p>Server</p>
+            <strong class="success">
+              Online
+            </strong>
+          </div>
+
+          <div>
+            <span>▰</span>
+            <p>Disk Space</p>
+
+            <strong>
+              {{ system.disk_free_gb }} GB free
+            </strong>
+          </div>
+
+          <div>
+            <span>◇</span>
+            <p>Django</p>
+
+            <strong>
+              {{ system.django_version }}
+            </strong>
+          </div>
+
+          <div>
+            <span>⌘</span>
+            <p>Python</p>
+
+            <strong>
+              {{ system.python_version }}
+            </strong>
+          </div>
+
+          <div>
+            <span>△</span>
+            <p>Environment</p>
+
+            <strong>
+              {% if system.debug %}
+                Development
+              {% else %}
+                Production
+              {% endif %}
+            </strong>
+          </div>
+        </div>
+
+        <div class="atdmf-health-message">
+          ✓ System services are responding.
+        </div>
+      </article>
+
+      <article class="atdmf-dashboard-panel">
+        <header>
+          <h2>Recent System Activities</h2>
+        </header>
+
+        <div class="atdmf-activity-list">
+          {% for item in activities %}
+            <div class="atdmf-activity-item">
+              <span>◇</span>
+
+              <div>
+                <strong>
+                  {{ item.action }}
+                </strong>
+
+                <small>
+                  {{ item.model_name }}
+                </small>
+              </div>
+
+              <b>
+                {{ item.user|default:"System" }}
+              </b>
+
+              <time>
+                {{ item.created_at|timesince }} ago
+              </time>
+            </div>
+          {% empty %}
+            <div class="atdmf-empty">
+              No recent activity available.
+            </div>
+          {% endfor %}
+        </div>
+
+        <a
+          href="/admin/audit/auditlog/"
+          class="atdmf-view-all"
+        >
+          View all logs →
+        </a>
+      </article>
+    </section>
+
+    <section class="atdmf-dashboard-panel atdmf-actions">
+      <header>
+        <h2>Quick Actions</h2>
+      </header>
+
+      <div class="atdmf-action-grid">
+
+        <a
+          href="/api/system-tools/backups/"
+          target="_blank"
+        >
+          <span>◉</span>
+
+          <div>
+            <strong>Create Backup</strong>
+            <small>Backup database now</small>
+          </div>
+        </a>
+
+        <a
+          href="/api/system-tools/health/"
+          target="_blank"
+        >
+          <span>♡</span>
+
+          <div>
+            <strong>System Health</strong>
+            <small>Review system status</small>
+          </div>
+        </a>
+
+        <a href="/admin/audit/auditlog/">
+          <span>▤</span>
+
+          <div>
+            <strong>Audit Logs</strong>
+            <small>Review system activities</small>
+          </div>
+        </a>
+
+        <a
+          href="/admin/school_settings/schoolsettings/"
+        >
+          <span>⚙</span>
+
+          <div>
+            <strong>School Settings</strong>
+            <small>Configure school details</small>
+          </div>
+        </a>
+      </div>
+    </section>
+  </main>
+</div>
+{% endblock %}

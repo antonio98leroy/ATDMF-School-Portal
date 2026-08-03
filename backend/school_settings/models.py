@@ -10,7 +10,7 @@ class SchoolSettings(models.Model):
 
     school_name = models.CharField(
         max_length=255,
-        default="Annie T. Doe Memorial Foundation High School",
+        default="Annie T. Doe Memorial Academy",
     )
     short_name = models.CharField(max_length=100, default="ATDMF-SMIS")
     motto = models.CharField(max_length=255, blank=True)

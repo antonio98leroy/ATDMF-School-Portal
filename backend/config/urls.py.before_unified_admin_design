@@ -1,0 +1,96 @@
+from django.conf import settings
+from django.conf.urls.static import static
+from django.contrib import admin
+from django.urls import include, path
+
+
+admin.site.site_header = "ATDMF Backend Administration"
+admin.site.site_title = "ATDMF Admin"
+admin.site.index_title = "School Management Administration"
+
+urlpatterns = [
+    path("admin/", admin.site.urls),
+
+    # Authentication
+    path(
+        "api/auth/",
+        include("accounts.urls"),
+    ),
+
+    # Students
+    path(
+        "api/students/",
+        include("students.urls"),
+    ),
+
+    # Academics
+    path(
+        "api/academics/",
+        include("academics.urls"),
+    ),
+
+    # Examinations
+    path(
+        "api/examinations/",
+        include("examinations.urls"),
+    ),
+
+    # Finance
+    path(
+        "api/finance/",
+        include("finance.urls"),
+    ),
+
+    # Employees
+    path(
+        "api/employees/",
+        include("employees.urls"),
+    ),
+
+    # Teacher assignments and portals
+    path(
+        "api/teacher-assignments/",
+        include("teacher_assignments.urls"),
+    ),
+
+    # Attendance
+    path(
+        "api/attendance/",
+        include("attendance.urls"),
+    ),
+
+    # Communications
+    path(
+        "api/communications/",
+        include("communications.urls"),
+    ),
+    # Audit Trail
+    path(
+        "api/audit/",
+        include("audit.urls"),
+    ),
+
+    # System Settings
+    path(
+        "api/school-settings/",
+        include("school_settings.urls"),
+    ),
+
+    path("api/import-center/", include("import_center.urls")),
+
+    # Academic Results Importer
+    path(
+        "api/academic-import/",
+        include("academic_import.urls"),
+    ),
+
+    path("api/system-tools/", include("system_tools.urls")),
+
+]
+
+
+if settings.DEBUG:
+    urlpatterns += static(
+        settings.MEDIA_URL,
+        document_root=settings.MEDIA_ROOT,
+    )

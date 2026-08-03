@@ -1,0 +1,28 @@
+{% extends "admin/base.html" %}
+{% load static %}
+
+{% block title %}
+  {% if subtitle %}{{ subtitle }} | {% endif %}
+  Annie T. Doe Memorial Academy
+{% endblock %}
+
+{% block extrastyle %}
+  {{ block.super }}
+  <link rel="stylesheet" href="{% static 'admin/atdmf-admin-unified.css' %}">
+{% endblock %}
+
+{% block branding %}
+<div class="atdmf-admin-brand">
+  <img
+    src="{% static 'admin/atdmf-seal.jpeg' %}"
+    alt="ATDMF seal"
+  >
+
+  <div>
+    <strong>Annie T. Doe Memorial Academy</strong>
+    <small>Backend Administration Portal</small>
+  </div>
+</div>
+{% endblock %}
+
+{% block nav-global %}{% endblock %}
