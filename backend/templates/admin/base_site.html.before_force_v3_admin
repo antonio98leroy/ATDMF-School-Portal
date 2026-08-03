@@ -1,7 +1,7 @@
 {% extends "admin/base.html" %}
 {% load static %}
 {% block title %}{% if subtitle %}{{ subtitle }} | {% endif %}Annie T. Doe Memorial Academy{% endblock %}
-{% block extrastyle %}{{ block.super }}<link rel="stylesheet" href="{% static 'admin/atdmf-enterprise-v3.css' %}?v=3.1">{% endblock %}
+{% block extrastyle %}{{ block.super }}<link rel="stylesheet" href="{% static 'admin/atdmf-enterprise-v3.css' %}">{% endblock %}
 {% block branding %}
 <div class="atdmf-v3-brand">
   <img src="{% static 'admin/atdmf-seal.jpeg' %}" alt="ATDMF seal">

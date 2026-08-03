@@ -22,9 +22,7 @@ class CustomUserAdmin(UserAdmin):
 # ATDMF MODERN DJANGO ADMIN BRANDING
 # ==========================================================
 
-# ATDMF Enterprise Admin V3
-admin.site.site_header = "Annie T. Doe Memorial Academy"
-admin.site.site_title = "ATDMF Enterprise Administration"
-admin.site.index_title = "School Management Administration"
-admin.site.index_template = "admin/atdmf_v3_index.html"
-
+admin.site.site_header = 'Annie T. Doe Memorial Academy'
+admin.site.site_title = 'ATDMF Enterprise Administration'
+admin.site.index_title = 'School Management Administration'
+admin.site.index_template = 'admin/atdmf_enterprise_index.html'

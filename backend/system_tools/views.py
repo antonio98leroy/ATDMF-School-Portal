@@ -97,3 +97,24 @@ class MaintenanceView(APIView):
         obj=SchoolSettings.load();obj.maintenance_mode=bool(request.data.get("maintenance_mode"));obj.updated_by=request.user;obj.save()
         AuditLog.objects.create(user=request.user,action="UPDATE_MAINTENANCE_MODE",model_name="SchoolSettings",object_id=str(obj.pk),details={"maintenance_mode":obj.maintenance_mode},ip_address=request.META.get("REMOTE_ADDR"))
         return Response({"detail":"Maintenance mode updated.","maintenance_mode":obj.maintenance_mode})
+
+
+from django.apps import apps
+from django.db import models
+class AdminSearchView(APIView):
+ permission_classes=[IsAuthenticated]
+ def get(self,request):
+  if not allowed(request.user): return Response({'detail':'Forbidden'},status=403)
+  q=request.query_params.get('q','').strip()
+  if len(q)<2:return Response([])
+  targets=[('students','Student','/admin/students/student/{id}/change/'),('employees','Employee','/admin/employees/employee/{id}/change/'),('accounts','User','/admin/accounts/user/{id}/change/'),('finance','Payment','/admin/finance/payment/{id}/change/')]
+  out=[]
+  preferred=['full_name','first_name','middle_name','last_name','username','email','phone','phone_number','admission_number','employee_id','receipt_number','reference']
+  for app_label,model_name,url in targets:
+   try:
+    model=apps.get_model(app_label,model_name); available={f.name for f in model._meta.get_fields() if getattr(f,'concrete',False)}; fields=[f for f in preferred if f in available]
+    cond=models.Q()
+    for f in fields: cond|=models.Q(**{f+'__icontains':q})
+    for obj in model.objects.filter(cond).distinct()[:6]: out.append({'type':model._meta.verbose_name.title(),'label':str(obj),'detail':'','url':url.format(id=obj.pk)})
+   except Exception: continue
+  return Response(out[:20])

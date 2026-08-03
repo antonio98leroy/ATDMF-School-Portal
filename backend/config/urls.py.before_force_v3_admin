@@ -4,16 +4,11 @@ from django.contrib import admin
 from django.urls import include, path
 
 
-
-
-
-# ==========================================================
-# ATDMF ENTERPRISE ADMIN V3
-# ==========================================================
-admin.site.site_header = "Annie T. Doe Memorial Academy"
-admin.site.site_title = "ATDMF Enterprise Administration"
+admin.site.site_header = "ATDMF Backend Administration"
+admin.site.site_title = "ATDMF Admin"
 admin.site.index_title = "School Management Administration"
-admin.site.index_template = "admin/atdmf_v3_index.html"
+
+admin.site.index_template = "admin/atdmf_index.html"
 
 urlpatterns = [
     path("admin/", admin.site.urls),

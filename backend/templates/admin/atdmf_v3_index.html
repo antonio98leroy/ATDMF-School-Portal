@@ -1,0 +1,97 @@
+{% extends "admin/base_site.html" %}
+{% load static atdmf_v3 %}
+{% block bodyclass %}{{ block.super }} dashboard atdmf-v3-dashboard{% endblock %}
+{% block breadcrumbs %}{% endblock %}
+{% block content %}
+<!-- ATDMF-V3-DASHBOARD-MARKER -->
+{% atdmf_v3_stats as stats %}
+{% atdmf_v3_status as status %}
+{% atdmf_v3_activity 8 as activities %}
+<div class="v3-shell">
+  <aside class="v3-sidebar">
+    <a class="home" href="/admin/">⌂ Dashboard</a>
+    <p>Students</p>
+    <a href="/admin/students/student/">◉ Student Records <b>›</b></a>
+    <a href="/admin/academics/enrollment/">＋ Enrollment <b>›</b></a>
+    <a href="/admin/attendance/studentattendance/">✓ Attendance <b>›</b></a>
+    <p>Staff</p>
+    <a href="/admin/employees/employee/">♙ Employees <b>›</b></a>
+    <a href="/admin/teacher_assignments/">⌘ Teacher Assignments <b>›</b></a>
+    <p>Academics</p>
+    <a href="/admin/academics/">▤ Academic Setup <b>›</b></a>
+    <a href="/admin/examinations/">◇ Examinations <b>›</b></a>
+    <a href="/admin/academic_import/">⇩ Results Import <b>›</b></a>
+    <p>Finance</p>
+    <a href="/admin/finance/studentinvoice/">$ Invoices <b>›</b></a>
+    <a href="/admin/finance/payment/">₵ Payments <b>›</b></a>
+    <a href="/admin/finance/expense/">− Expenses <b>›</b></a>
+    <p>System</p>
+    <a href="/admin/accounts/user/">◆ User Accounts <b>›</b></a>
+    <a href="/admin/import_center/importbatch/">⇧ Import Center <b>›</b></a>
+    <a href="/admin/audit/auditlog/">◇ Audit Trail <b>›</b></a>
+    <a href="/admin/school_settings/schoolsettings/">⚙ Settings <b>›</b></a>
+    <div class="v3-session">
+      <strong>Current Session</strong>
+      <div><span>Academic Year</span><b>{{ stats.academic_year|default:"Not set" }}</b></div>
+      <div><span>Term</span><b>{{ stats.current_term|default:"Not set" }}</b></div>
+    </div>
+  </aside>
+
+  <main class="v3-main">
+    <section class="v3-hero">
+      <div><h1>School Administration Dashboard</h1><p>Manage daily school operations from one place.</p></div>
+      <div class="v3-photo"></div>
+    </section>
+
+    <section class="v3-quick">
+      <a href="/admin/students/student/add/"><span>＋</span><div><strong>Add Student</strong><small>Create student profile</small></div></a>
+      <a href="/admin/employees/employee/add/"><span>＋</span><div><strong>Add Employee</strong><small>Create staff record</small></div></a>
+      <a href="/admin/finance/payment/add/"><span>$</span><div><strong>Record Payment</strong><small>Enter payment</small></div></a>
+      <a href="/admin/import_center/importbatch/"><span>⇧</span><div><strong>Import Data</strong><small>Review imports</small></div></a>
+    </section>
+
+    <section class="v3-stats">
+      <article><span class="blue">👥</span><div><small>Students</small><strong>{{ stats.students }}</strong></div></article>
+      <article><span class="green">♙</span><div><small>Employees</small><strong>{{ stats.employees }}</strong></div></article>
+      <article><span class="purple">▤</span><div><small>Classes</small><strong>{{ stats.classes }}</strong></div></article>
+      <article><span class="orange">$</span><div><small>Revenue LRD</small><strong>{{ stats.revenue_lrd }}</strong></div></article>
+      <article><span class="red">!</span><div><small>Absent Today</small><strong>{{ stats.absent_today }}</strong></div></article>
+      <article><span class="teal">✓</span><div><small>Active Users</small><strong>{{ stats.active_users }}</strong></div></article>
+    </section>
+
+    <section class="v3-grid">
+      <article class="v3-panel">
+        <header><h2>System Health</h2><a href="/api/system-tools/health/" target="_blank">Open report</a></header>
+        <div class="v3-health">
+          <div><small>Database</small><strong class="{% if status.database %}ok{% else %}bad{% endif %}">{% if status.database %}Connected{% else %}Unavailable{% endif %}</strong></div>
+          <div><small>Free Storage</small><strong>{{ status.disk_free_gb }} GB</strong></div>
+          <div><small>Django</small><strong>{{ status.django_version }}</strong></div>
+          <div><small>Python</small><strong>{{ status.python_version }}</strong></div>
+          <div><small>Sessions</small><strong>{{ status.active_sessions }}</strong></div>
+          <div><small>Audit Events</small><strong>{{ status.audit_events_24h }}</strong></div>
+        </div>
+      </article>
+
+      <article class="v3-panel">
+        <header><h2>Recent Activities</h2><a href="/admin/audit/auditlog/">View all</a></header>
+        <div class="v3-activity">
+        {% for item in activities %}
+          <div><span>◇</span><section><strong>{{ item.action }}</strong><small>{{ item.model_name }}</small></section><b>{{ item.user|default:"System" }}</b><time>{{ item.created_at|timesince }} ago</time></div>
+        {% empty %}
+          <p>No recent activity is available.</p>
+        {% endfor %}
+        </div>
+      </article>
+    </section>
+
+    <section class="v3-panel v3-apps">
+      <header><h2>Management Areas</h2><span>Open a section to manage its records.</span></header>
+      <div>
+      {% for app in app_list %}
+        <a href="{{ app.app_url }}"><span>◆</span><section><strong>{{ app.name }}</strong><small>{{ app.models|length }} sections</small></section><b>›</b></a>
+      {% endfor %}
+      </div>
+    </section>
+  </main>
+</div>
+{% endblock %}

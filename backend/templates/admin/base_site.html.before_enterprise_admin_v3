@@ -1,0 +1,7 @@
+{% extends "admin/base.html" %}
+{% load static %}
+{% block title %}{% if subtitle %}{{ subtitle }} | {% endif %}Annie T. Doe Memorial Academy{% endblock %}
+{% block extrastyle %}{{ block.super }}<link rel="stylesheet" href="{% static 'admin/atdmf-enterprise-admin.css' %}">{% endblock %}
+{% block extrahead %}{{ block.super }}<script defer src="{% static 'admin/atdmf-enterprise-admin.js' %}"></script>{% endblock %}
+{% block branding %}<div class="atdmf-brand"><img src="{% static 'admin/atdmf-seal.jpeg' %}" alt="ATDMF seal"><div><strong>Annie T. Doe Memorial Academy</strong><small>Modern Enterprise Administration</small></div></div>{% endblock %}
+{% block nav-global %}<div class="atdmf-global-tools"><div class="atdmf-global-search"><input id="atdmf-global-search-input" type="search" placeholder="Search students, staff, users, receipts..." autocomplete="off"><div id="atdmf-global-search-results" class="atdmf-search-results" hidden></div></div><a class="atdmf-top-button" href="/admin/">Dashboard</a><a class="atdmf-top-button" href="/admin/audit/auditlog/">Audit</a><a class="atdmf-top-button danger" href="/api/system-tools/health/" target="_blank">System</a></div>{% endblock %}
