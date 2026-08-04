@@ -10,7 +10,6 @@ SECRET_KEY=os.getenv('SECRET_KEY','dev-secret-key')
 DEBUG=os.getenv('DEBUG','True').lower()=='true'
 ALLOWED_HOSTS=['127.0.0.1','localhost']
 INSTALLED_APPS=[
-    "clinic",
 'django.contrib.admin','django.contrib.auth','django.contrib.contenttypes','django.contrib.sessions','django.contrib.messages','django.contrib.staticfiles',
 'rest_framework','rest_framework_simplejwt','corsheaders',
 'accounts','students','staff', "employees","teacher_assignments",'academics','attendance','examinations','finance','communications','audit.apps.AuditConfig',

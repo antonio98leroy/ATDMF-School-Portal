@@ -16,7 +16,6 @@ admin.site.index_title = "School Management Administration"
 admin.site.index_template = "admin/atdmf_v3_index.html"
 
 urlpatterns = [
-    path("api/clinic/", include("clinic.urls")),
     path("admin/", admin.site.urls),
 
     # Authentication

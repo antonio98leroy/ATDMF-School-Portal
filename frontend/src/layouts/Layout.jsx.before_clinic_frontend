@@ -32,7 +32,6 @@ import {
   UploadFile,
   Security,
   CloudUpload,
-  LocalHospital,
 } from "@mui/icons-material";
 
 import {
@@ -161,22 +160,6 @@ const navigationItems = [
     path: "/communications",
     icon: <Campaign />,
     roles: ["SUPER_ADMIN", "PRINCIPAL", "VICE_PRINCIPAL", "REGISTRAR", "ACCOUNTANT", "TEACHER", "IT_ADMIN"],
-  },
-  {
-    label: "School Health Clinic",
-    path: "/clinic",
-    icon: <LocalHospital />,
-    roles: [
-      "OWNER",
-      "SUPER_ADMIN",
-      "DEVELOPER",
-      "IT_ADMIN",
-      "PRINCIPAL",
-      "VICE_PRINCIPAL",
-      "CLINIC_ADMIN",
-      "NURSE",
-      "DOCTOR",
-    ],
   },
   {
     label: "Reports Center",

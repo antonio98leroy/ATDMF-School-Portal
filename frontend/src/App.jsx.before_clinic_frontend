@@ -44,12 +44,6 @@ import DeveloperDashboard from "./pages/DeveloperDashboard";
 import UnifiedImportCenter from "./pages/UnifiedImportCenter";
 import ClassroomAttendance from "./pages/ClassroomAttendance";
 import Transcript from "./pages/Transcript";
-import ClinicDashboard from "./pages/clinic/ClinicDashboard";
-import ClinicVisits from "./pages/clinic/ClinicVisits";
-import ClinicVisitForm from "./pages/clinic/ClinicVisitForm";
-import ClinicMedicines from "./pages/clinic/ClinicMedicines";
-import ClinicReferrals from "./pages/clinic/ClinicReferrals";
-import ClinicHealthRecords from "./pages/clinic/ClinicHealthRecords";
 const EXECUTIVE_ROLES = [
   "OWNER",
   "SUPER_ADMIN",
@@ -190,18 +184,6 @@ const STAFF_PORTAL_ROLES = [
   "IT_ADMIN",
   "PRINCIPAL",
   "VICE_PRINCIPAL",
-];
-
-const CLINIC_ROLES = [
-  "OWNER",
-  "SUPER_ADMIN",
-  "DEVELOPER",
-  "IT_ADMIN",
-  "PRINCIPAL",
-  "VICE_PRINCIPAL",
-  "CLINIC_ADMIN",
-  "NURSE",
-  "DOCTOR",
 ];
 
 function Placeholder({ title }) {
@@ -605,60 +587,6 @@ export default function App() {
           element={
             <RoleRoute roles={CLASSROOM_ATTENDANCE_ROLES}>
               <ClassroomAttendance />
-            </RoleRoute>
-          }
-        />
-
-        <Route
-          path="/clinic"
-          element={
-            <RoleRoute roles={CLINIC_ROLES}>
-              <ClinicDashboard />
-            </RoleRoute>
-          }
-        />
-
-        <Route
-          path="/clinic/visits"
-          element={
-            <RoleRoute roles={CLINIC_ROLES}>
-              <ClinicVisits />
-            </RoleRoute>
-          }
-        />
-
-        <Route
-          path="/clinic/visits/new"
-          element={
-            <RoleRoute roles={CLINIC_ROLES}>
-              <ClinicVisitForm />
-            </RoleRoute>
-          }
-        />
-
-        <Route
-          path="/clinic/medicines"
-          element={
-            <RoleRoute roles={CLINIC_ROLES}>
-              <ClinicMedicines />
-            </RoleRoute>
-          }
-        />
-
-        <Route
-          path="/clinic/referrals"
-          element={
-            <RoleRoute roles={CLINIC_ROLES}>
-              <ClinicReferrals />
-            </RoleRoute>
-          }
-        />
-
-        <Route
-          path="/clinic/health-records"
-          element={
-            <RoleRoute roles={CLINIC_ROLES}>
-              <ClinicHealthRecords />
             </RoleRoute>
           }
         />
