@@ -8,3 +8,8 @@ dist/
 media/
 .vscode/
 .idea/
+
+# Database backups
+backups/
+*.sql
+*.sql.gz
