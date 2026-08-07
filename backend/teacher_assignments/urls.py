@@ -1,3 +1,11 @@
+
+from .timetable_views import (
+    SchoolPeriodListView,
+    TimetableEntryListCreateView,
+    TimetableEntryDetailView,
+    MyTimetableView,
+)
+
 from django.urls import include, path
 from rest_framework.routers import DefaultRouter
 
@@ -20,6 +28,28 @@ router.register(
 
 
 urlpatterns = [
+
+    path(
+        "timetable/periods/",
+        SchoolPeriodListView.as_view(),
+        name="timetable-periods",
+    ),
+    path(
+        "timetable/entries/",
+        TimetableEntryListCreateView.as_view(),
+        name="timetable-entries",
+    ),
+    path(
+        "timetable/entries/<int:pk>/",
+        TimetableEntryDetailView.as_view(),
+        name="timetable-entry-detail",
+    ),
+    path(
+        "portal/my-timetable/",
+        MyTimetableView.as_view(),
+        name="my-timetable",
+    ),
+
     path(
         "portal/dashboard/",
         TeacherDashboardView.as_view(),
