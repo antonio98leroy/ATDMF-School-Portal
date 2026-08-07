@@ -121,10 +121,22 @@ const navigationItems = [
     roles: ["SUPER_ADMIN", "PRINCIPAL", "VICE_PRINCIPAL", "REGISTRAR"],
   },
   {
+    label: "Vice Principal Dashboard",
+    path: "/vice-principal-dashboard",
+    icon: <AssignmentInd />,
+    roles: ["OWNER", "SUPER_ADMIN", "VICE_PRINCIPAL"],
+  },
+  {
     label: "Teacher Assignments",
     path: "/teacher-assignments",
     icon: <AssignmentInd />,
     roles: ["SUPER_ADMIN", "PRINCIPAL", "VICE_PRINCIPAL", "REGISTRAR"],
+  },
+  {
+    label: "School Timetable",
+    path: "/timetable",
+    icon: <AssignmentInd />,
+    roles: ["OWNER", "SUPER_ADMIN", "PRINCIPAL", "VICE_PRINCIPAL"],
   },
   {
     label: "Examinations",
@@ -188,6 +200,18 @@ const navigationItems = [
     label: "Teacher Portal",
     path: "/teacher-portal",
     icon: <CoPresent />,
+    roles: ["TEACHER"],
+  },
+  {
+    label: "My Schedule",
+    path: "/teacher-schedule",
+    icon: <CalendarMonth />,
+    roles: ["TEACHER"],
+  },
+  {
+    label: "Enter Grades",
+    path: "/teacher-grade-entry",
+    icon: <FactCheck />,
     roles: ["TEACHER"],
   },
   {

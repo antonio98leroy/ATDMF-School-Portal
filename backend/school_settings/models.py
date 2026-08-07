@@ -21,6 +21,100 @@ class SchoolSettings(models.Model):
     website = models.URLField(blank=True)
     principal_name = models.CharField(max_length=150, blank=True)
     registrar_name = models.CharField(max_length=150, blank=True)
+
+    # --------------------------------------------------
+    # Official document signatures
+    # --------------------------------------------------
+    principal_signature = models.ImageField(
+        upload_to="school/signatures/",
+        blank=True,
+        null=True,
+    )
+
+    registrar_signature = models.ImageField(
+        upload_to="school/signatures/",
+        blank=True,
+        null=True,
+    )
+
+    principal_title = models.CharField(
+        max_length=120,
+        default="Principal",
+        blank=True,
+    )
+
+    registrar_title = models.CharField(
+        max_length=120,
+        default="Registrar",
+        blank=True,
+    )
+
+    # --------------------------------------------------
+    # ID Card template
+    # --------------------------------------------------
+    id_card_title = models.CharField(
+        max_length=150,
+        default="OFFICIAL IDENTIFICATION CARD",
+    )
+
+    id_card_footer = models.CharField(
+        max_length=255,
+        default=(
+            "This card remains the property of "
+            "Annie T. Doe Memorial Academy."
+        ),
+        blank=True,
+    )
+
+    id_card_address = models.CharField(
+        max_length=255,
+        default=(
+            "Lower Buchanan, Grand Bassa County, Liberia"
+        ),
+        blank=True,
+    )
+
+    id_card_show_signature = models.BooleanField(
+        default=True,
+    )
+
+    # --------------------------------------------------
+    # Certificate template
+    # --------------------------------------------------
+    certificate_school_name = models.CharField(
+        max_length=255,
+        blank=True,
+        default="Annie T. Doe Memorial Academy",
+    )
+
+    certificate_address = models.CharField(
+        max_length=255,
+        blank=True,
+        default=(
+            "Lower Buchanan, Grand Bassa County, Liberia"
+        ),
+    )
+
+    certificate_intro_text = models.CharField(
+        max_length=255,
+        default=(
+            "This certificate is proudly presented to"
+        ),
+        blank=True,
+    )
+
+    certificate_footer = models.CharField(
+        max_length=255,
+        blank=True,
+    )
+
+    certificate_show_principal_signature = models.BooleanField(
+        default=True,
+    )
+
+    certificate_show_registrar_signature = models.BooleanField(
+        default=True,
+    )
     default_currency = models.CharField(
         max_length=10,
         choices=Currency.choices,

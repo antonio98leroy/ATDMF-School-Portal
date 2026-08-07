@@ -20,6 +20,8 @@ import Notices from "./pages/Notices";
 import OwnerDashboard from "./pages/OwnerDashboard";
 import ParentPortal from "./pages/ParentPortal";
 import PrincipalDashboard from "./pages/PrincipalDashboard";
+import VicePrincipalDashboard from "./pages/VicePrincipalDashboard";
+import TimetableManager from "./pages/TimetableManager";
 import Promotions from "./pages/Promotions";
 import ReportCards from "./pages/ReportCards";
 import ReportsCenter from "./pages/ReportsCenter";
@@ -28,6 +30,8 @@ import StudentPortal from "./pages/StudentPortal";
 import Students from "./pages/Students";
 import TeacherAssignments from "./pages/TeacherAssignments";
 import TeacherPortal from "./pages/TeacherPortal";
+import TeacherGradeEntry from "./pages/TeacherGradeEntry";
+import TeacherSchedule from "./pages/TeacherSchedule";
 import Employees from "./pages/employees/Employees";
 
 
@@ -246,6 +250,14 @@ function HomeRedirect() {
         />
       );
 
+    case "VICE_PRINCIPAL":
+      return (
+        <Navigate
+          to="/vice-principal-dashboard"
+          replace
+        />
+      );
+
     case "PRINCIPAL":
       return (
         <Navigate
@@ -452,6 +464,24 @@ export default function App() {
         />
 
         <Route
+          path="/teacher-schedule"
+          element={
+            <RoleRoute roles={["TEACHER"]}>
+              <TeacherSchedule />
+            </RoleRoute>
+          }
+        />
+
+        <Route
+          path="/teacher-grade-entry"
+          element={
+            <RoleRoute roles={["TEACHER"]}>
+              <TeacherGradeEntry />
+            </RoleRoute>
+          }
+        />
+
+        <Route
           path="/teacher-portal"
           element={
             <RoleRoute
@@ -480,6 +510,37 @@ export default function App() {
               roles={["PARENT"]}
             >
               <ParentPortal />
+            </RoleRoute>
+          }
+        />
+
+        <Route
+          path="/vice-principal-dashboard"
+          element={
+            <RoleRoute
+              roles={[
+                "OWNER",
+                "SUPER_ADMIN",
+                "VICE_PRINCIPAL",
+              ]}
+            >
+              <VicePrincipalDashboard />
+            </RoleRoute>
+          }
+        />
+
+        <Route
+          path="/timetable"
+          element={
+            <RoleRoute
+              roles={[
+                "OWNER",
+                "SUPER_ADMIN",
+                "PRINCIPAL",
+                "VICE_PRINCIPAL",
+              ]}
+            >
+              <TimetableManager />
             </RoleRoute>
           }
         />

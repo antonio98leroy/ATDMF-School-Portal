@@ -33,3 +33,9 @@ export const TeacherPortalAPI = {
       },
     }),
 };
+
+export const getMyTimetable = (params = {}) =>
+  api.get(
+    "/teacher-assignments/portal/my-timetable/",
+    { params }
+  );

@@ -267,3 +267,225 @@ class EmployeeAttendance(models.Model):
             f"{self.date} - "
             f"{self.get_status_display()}"
         )
+
+
+class ClassroomAttendanceSession(models.Model):
+    """
+    Represents one teacher taking attendance for one
+    assigned class/subject on a particular date.
+    """
+
+    teacher_assignment = models.ForeignKey(
+        "teacher_assignments.TeacherAssignment",
+        on_delete=models.PROTECT,
+        related_name="attendance_sessions",
+    )
+
+    timetable_entry = models.ForeignKey(
+        "teacher_assignments.TimetableEntry",
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name="attendance_sessions",
+    )
+
+    date = models.DateField(
+        default=timezone.localdate,
+    )
+
+    recorded_by = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.PROTECT,
+        related_name="classroom_attendance_sessions",
+    )
+
+    submitted = models.BooleanField(
+        default=False,
+    )
+
+    submitted_at = models.DateTimeField(
+        null=True,
+        blank=True,
+    )
+
+    notes = models.CharField(
+        max_length=255,
+        blank=True,
+    )
+
+    created_at = models.DateTimeField(
+        auto_now_add=True,
+    )
+
+    updated_at = models.DateTimeField(
+        auto_now=True,
+    )
+
+    class Meta:
+        ordering = [
+            "-date",
+            "teacher_assignment__class_section",
+        ]
+
+        constraints = [
+            models.UniqueConstraint(
+                fields=[
+                    "teacher_assignment",
+                    "timetable_entry",
+                    "date",
+                ],
+                name=(
+                    "unique_classroom_attendance_session"
+                ),
+            ),
+        ]
+
+        indexes = [
+            models.Index(
+                fields=["date"],
+            ),
+            models.Index(
+                fields=["submitted"],
+            ),
+        ]
+
+    def clean(self):
+        errors = {}
+
+        assignment = self.teacher_assignment
+
+        if assignment and not assignment.active:
+            errors["teacher_assignment"] = (
+                "The teacher assignment is inactive."
+            )
+
+        if (
+            self.timetable_entry_id
+            and self.teacher_assignment_id
+            and self.timetable_entry.teacher_assignment_id
+            != self.teacher_assignment_id
+        ):
+            errors["timetable_entry"] = (
+                "The timetable entry does not belong "
+                "to this teacher assignment."
+            )
+
+        if errors:
+            raise ValidationError(errors)
+
+    def save(self, *args, **kwargs):
+        self.full_clean()
+        super().save(*args, **kwargs)
+
+    def __str__(self):
+        assignment = self.teacher_assignment
+
+        return (
+            f"{self.date} - "
+            f"{assignment.class_section} - "
+            f"{assignment.subject.name}"
+        )
+
+
+class ClassroomAttendanceRecord(models.Model):
+    class Status(models.TextChoices):
+        PRESENT = "P", "Present"
+        ABSENT = "A", "Absent"
+        LATE = "L", "Late"
+        EXCUSED = "E", "Excused"
+        SICK = "S", "Sick"
+        SUSPENDED = "SU", "Under Suspension"
+
+    session = models.ForeignKey(
+        ClassroomAttendanceSession,
+        on_delete=models.CASCADE,
+        related_name="records",
+    )
+
+    student = models.ForeignKey(
+        Student,
+        on_delete=models.CASCADE,
+        related_name="classroom_attendance_records",
+    )
+
+    status = models.CharField(
+        max_length=2,
+        choices=Status.choices,
+        default=Status.PRESENT,
+    )
+
+    remarks = models.CharField(
+        max_length=255,
+        blank=True,
+    )
+
+    created_at = models.DateTimeField(
+        auto_now_add=True,
+    )
+
+    updated_at = models.DateTimeField(
+        auto_now=True,
+    )
+
+    class Meta:
+        ordering = [
+            "student__last_name",
+            "student__first_name",
+        ]
+
+        constraints = [
+            models.UniqueConstraint(
+                fields=[
+                    "session",
+                    "student",
+                ],
+                name=(
+                    "unique_student_classroom_attendance"
+                ),
+            ),
+        ]
+
+        indexes = [
+            models.Index(
+                fields=["status"],
+            ),
+        ]
+
+    def clean(self):
+        if (
+            self.session_id
+            and self.student_id
+        ):
+            assignment = (
+                self.session.teacher_assignment
+            )
+
+            from academics.models import Enrollment
+
+            enrolled = Enrollment.objects.filter(
+                student=self.student,
+                academic_year=assignment.academic_year,
+                class_section=assignment.class_section,
+                active=True,
+            ).exists()
+
+            if not enrolled:
+                raise ValidationError(
+                    {
+                        "student": (
+                            "This student is not actively "
+                            "enrolled in the assigned class."
+                        )
+                    }
+                )
+
+    def save(self, *args, **kwargs):
+        self.full_clean()
+        super().save(*args, **kwargs)
+
+    def __str__(self):
+        return (
+            f"{self.student.full_name} - "
+            f"{self.session.date} - "
+            f"{self.get_status_display()}"
+        )

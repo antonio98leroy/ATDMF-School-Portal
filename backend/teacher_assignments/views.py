@@ -1,10 +1,47 @@
 from django.db.models import Count, Sum
 from rest_framework import filters, permissions, viewsets
+from rest_framework.permissions import BasePermission
 from rest_framework.decorators import action
 from rest_framework.response import Response
 
 from .models import TeacherAssignment
 from .serializers import TeacherAssignmentSerializer
+
+
+
+
+class TeacherAssignmentManagementPermission(BasePermission):
+    """
+    Restricts teacher assignment administration to
+    authorized academic management roles.
+    """
+
+    message = (
+        "You are not authorized to manage "
+        "teacher assignments."
+    )
+
+    allowed_roles = {
+        "OWNER",
+        "SUPER_ADMIN",
+        "PRINCIPAL",
+        "VICE_PRINCIPAL",
+    }
+
+    def has_permission(self, request, view):
+        user = request.user
+
+        if not user or not user.is_authenticated:
+            return False
+
+        if getattr(user, "is_superuser", False):
+            return True
+
+        role = str(
+            getattr(user, "role", "") or ""
+        ).upper()
+
+        return role in self.allowed_roles
 
 
 class TeacherAssignmentViewSet(
@@ -14,6 +51,7 @@ class TeacherAssignmentViewSet(
 
     permission_classes = [
         permissions.IsAuthenticated,
+        TeacherAssignmentManagementPermission,
     ]
 
     filter_backends = [
